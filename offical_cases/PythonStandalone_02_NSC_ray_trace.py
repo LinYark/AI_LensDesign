@@ -146,10 +146,10 @@ if __name__ == '__main__':
     
     DetObj = 4
     ObjCast = CastTo(TheNCE.GetObjectAt(DetObj), 'IEditorRow')
-    numXPixels = int(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par3).Col).Value)
-    numYPixels = int(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par4).Col).Value)
-    pltWidth   = 2*float(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par1).Col).Value)
-    pltHeight  = 2 * float(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par2).Col).Value)
+    numXPixels = int(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par3).Col).value)
+    numYPixels = int(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par4).Col).value)
+    pltWidth   = 2*float(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par1).Col).value)
+    pltHeight  = 2 * float(ObjCast.GetCellAt(TheNCE.GetObjectAt(DetObj).GetObjectCell(constants.ObjectColumn_Par2).Col).value)
 
     pix = 0
     # note that you can use either xrange(num) in 2.7 or range(num) in 3.x, but NumPy allows for cross compatibility

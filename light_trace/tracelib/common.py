@@ -1,0 +1,10 @@
+import math
+EPSILON = 1e-9
+def sin(x):
+    return math.sin(x)
+def tan(x):
+    return math.tan(x)
+def asin(x):
+    return math.asin(x)
+def atan(x):
+    return math.atan(x)
