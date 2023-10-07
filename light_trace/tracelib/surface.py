@@ -8,8 +8,6 @@ class surface_lib():
                 n        = 'air',
                 comment  = "none",
                 ):
-        if r == 'inf':
-            r = 1e10
         self.r        = r
         self.t        = t
         self.h        = h

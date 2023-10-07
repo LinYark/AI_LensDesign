@@ -1,4 +1,6 @@
 import math
+#linyark@hust.edu.cn
+
 EPSILON = 1e-9
 def sin(x):
     return math.sin(x)
