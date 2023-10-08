@@ -5,7 +5,7 @@ class surface_lib():
                 r        = 'inf',
                 t        = 10,
                 h        = 50,
-                n        = 'air',
+                n        = 1,
                 comment  = "none",
                 ):
         self.r        = r
