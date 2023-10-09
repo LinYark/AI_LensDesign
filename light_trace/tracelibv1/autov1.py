@@ -8,22 +8,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
-from light_trace.tracelib.common import *
-from light_trace.tracelib.surface import surface_lib
-from light_trace.tracelib.light import light_lib
+from light_trace.tracelibv1.common import *
+from light_trace.tracelibv1.surface import Surface
+from light_trace.tracelibv1.light import light_lib
+
+def get_surfaces():
+    surfaces = Surface()
+    surfaces.add()
+
+if __name__ == "__main__":
+    surfaces = get_surfaces()
 
 surfaces = [
-    surface_lib(r=133, h=40, t=50, n=1.5168),
-    surface_lib(r=-100, h=40, t=60, n=1.9),
-    surface_lib(r="inf", h=40, t=100, n=1),
-    surface_lib(r=100, h=50, t=50, n=1.5168),
-    surface_lib(r=-100, h=50, t=60, n=1),
-    surface_lib(r="inf", h=20, t="inf"),
+    surface_lib(r=133,   t=50,  n=1.5),
+    surface_lib(r=-100,  t=60,  n=1.9),
+    surface_lib(r="inf", t=100, n=1),
+    surface_lib(r=100,   t=50,  n=1.5),
+    surface_lib(r=-100,  t=60,  n=1),
+    surface_lib(r="inf", t="inf"),
 ]
 
-u = 0/180*np.pi
-c = "b"
-p = 0
+entrance,p = 30,0
+u,c = 0/180*np.pi, "b"
 lights1 = [
     light_lib(q=30,  u=u, p=p, c=c),
     light_lib(q=20,  u=u, p=p, c=c),
@@ -33,9 +39,7 @@ lights1 = [
     light_lib(q=-20, u=u, p=p, c=c),
     light_lib(q=-30, u=u, p=p, c=c),
 ]
-u = 5/180*np.pi
-c = "g"
-p = 0
+u,c = 5/180*np.pi, "b"
 lights = [
     light_lib(q=30,  u=u, p=p, c=c),
     light_lib(q=20,  u=u, p=p, c=c),
