@@ -2,6 +2,17 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+class LightModule(nn.Module):
+    def __init__(self, q = 10, u = 0, p = 0, c = "r"):
+        super(LightModule, self).__init__()
+        self.q = torch.tensor(q,dtype=float)
+        self.u = torch.tensor(u,dtype=float)
+        self.p = torch.tensor(p,dtype=float)
+        self.c = "r"
+
+    def forward(self, light):
+        pass
+
 class SurfaceModule(nn.Module):
     def __init__(self, r=np.inf, t=np.inf, v=[], n=1,h=np.inf):
         super(SurfaceModule, self).__init__()
@@ -21,16 +32,6 @@ class SurfaceModule(nn.Module):
     def reverse_track(self,):
         pass
 
-class LightModule(nn.Module):
-    def __init__(self, q = 10, u = 0, p = 0, c = "r"):
-        super(LightModule, self).__init__()
-        self.q = torch.tensor(q,dtype=float)
-        self.u = torch.tensor(u,dtype=float)
-        self.p = torch.tensor(p,dtype=float)
-        self.c = "r"
-
-    def forward(self, light):
-        pass
 
 class OpticalSystemModule(nn.Module):
     def __init__(self,):
@@ -64,8 +65,8 @@ class OpticalSystemModule(nn.Module):
     
     def build_reverse_light(self, cur_stop_position):
         u = 3/180*np.pi
-        c = "g"
         p = cur_stop_position
+        c = "g"
         lights = nn.ModuleList()
         lights.append(LightModule(q=0,  u=u, p=p, c=c))
         lights.append(LightModule(q=0,  u=-u, p=p, c=c))
@@ -78,11 +79,35 @@ class OpticalSystemModule(nn.Module):
         pass
 
     def reverse_track(self,reverser_lights):
-        last_n, last_t, sum_t = 1, 0, 0
-        all_lights = []
-        all_lights.append(reverser_lights)
         p = reverser_lights[0].p
-        
+        mark_n,idx = self.surfaces[0].n, 0
+        for i in self.surfaces:
+            if i.z>=p:
+                break
+            else:
+                mark_n = i.n
+                idx = i
+
+        all_lights = [None]*(i+1)
+        all_lights[i] = reverser_lights
+
+        lenth = len(self.surfaces)
+        for i in range(idx-1,-1,-1):
+            surface = self.surfaces[i]
+            if surface.r != "inf":
+                c, r, t, n_1, z = 1 / surface.r, surface.r, surface.t, surface.n, surface.z
+                out_lights = []
+                for light in all_lights[i]:
+                    u, color = light.u, light.c
+                    q = light.q + sin(u) * last_t
+                    sinI = q * c + sin(u)
+                    sinI_1 = last_n * sinI / n_1
+                    u_1 = u - asin(sinI) + asin(sinI_1)
+                    q_1 = r * (sinI_1 - sin(u_1))
+                    out_lights.append(light_lib(q=q_1, u=u_1, p=sum_t, c=color))
+            else:
+                pass
+
         for i, surface in enumerate(surfaces):
             if surface.r != "inf":
                 c, r, t, n_1 = 1 / surface.r, surface.r, surface.t, surface.n
