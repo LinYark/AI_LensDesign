@@ -220,8 +220,14 @@ class OpticalSystemModule(nn.Module):
         self.flash_surface_z_potion()
         cur_stop_position = self.get_cur_entrance_puplil_position()
         reverser_lights = self.build_reverse_light(cur_stop_position)
-        cur_EPD_postion = self.reverse_track(reverser_lights,cur_stop_position)
-        forward_light = self.build_forward_light(cur_EPD_postion)
+        cur_EPD_position = self.reverse_track(reverser_lights,cur_stop_position)
+        print("\n===============\n")
+        print("cur_EPD_position = ", cur_EPD_position.data)
+        print("zemax_EPD_position = 36.03347")
+        print("detla = ",cur_EPD_position-36.03347)
+        print("\n===============\n")
+        
+        forward_light = self.build_forward_light(cur_EPD_position)
         light_trace = self.forward_track(forward_light)
 
         self.light_trace = light_trace
