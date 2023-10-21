@@ -14,13 +14,17 @@ from light_trace.tracelibv0_1.light import light_lib
 
 surfaces = [
     surface_lib(r=133, h=40, t=50, n=1.5168),
-    surface_lib(r=-100, h=40, t=60, n=1.9),
+    surface_lib(r=-100, h=40, t=60, n=2.02204),
     surface_lib(r="inf", h=40, t=100, n=1),
     surface_lib(r=100, h=50, t=50, n=1.5168),
     surface_lib(r=-100, h=50, t=60, n=1),
     surface_lib(r="inf", h=20, t="inf"),
 ]
-
+# surfaces = [
+#     surface_lib(r=200, h=100, t=50, n=1.5168),
+#     surface_lib(r=-200, h=100, t=60, n=1),
+#     surface_lib(r="inf", h=20, t="inf"),
+# ]
 entrance = 30
 u = 0/180*np.pi
 c = "b"
@@ -38,13 +42,13 @@ u = 5/180*np.pi
 c = "g"
 p = 0
 lights = [
-    light_lib(q=30,  u=u, p=p, c=c),
-    light_lib(q=20,  u=u, p=p, c=c),
-    light_lib(q=10,  u=u, p=p, c=c),
+    light_lib(q=30*cos(u),  u=u, p=p, c=c),
+    light_lib(q=20*cos(u),  u=u, p=p, c=c),
+    light_lib(q=10*cos(u),  u=u, p=p, c=c),
     light_lib(q=0,   u=u, p=p, c=c),
-    light_lib(q=-10, u=u, p=p, c=c),
-    light_lib(q=-20, u=u, p=p, c=c),
-    light_lib(q=-30, u=u, p=p, c=c),
+    light_lib(q=-10*cos(u), u=u, p=p, c=c),
+    light_lib(q=-20*cos(u), u=u, p=p, c=c),
+    light_lib(q=-30*cos(u), u=u, p=p, c=c),
 ]
 light=lights.extend(lights1)
 # trace

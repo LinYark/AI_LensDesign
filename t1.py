@@ -16,44 +16,53 @@ import torch
 import torch.nn as nn
 device = torch.device("cuda:0")
 
-# class ct(torch.nn.Module):
-#     def __init__(self) -> None:
-#         super().__init__()
-#         self.p1 = nn.Parameter(torch.tensor([1.]))
+class ct(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.p = nn.Parameter(torch.tensor([1.]))
 
-# class net(nn.Module):
-#     def __init__(self) -> None:
-#         super().__init__()
-#         self.ct1 = ct()
-#         self.x	=	torch.tensor([2.])
+class net(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        # self.ct1 = ct()
+        # self.ct2 = ct()
+        # self.list = [self.ct1,self.ct2]
+        # self.list = nn.ModuleList([self.ct1,self.ct2])
+        self.list = nn.ModuleList([nn.Linear(2, 1)])#nn.ModuleList([nn.Linear(2, 1)])
 
-#     def forward(self,):
-#         y	= self.ct1.p1 ** self.x
-#         return y
+        self.x	=	 torch.tensor([2.,3.]).to(device)
+
+    def forward(self,):
+        y = self.list[0](self.x)
+        # y = self.list[0].p*self.x[0] + self.list[1].p*self.x[1] 
+        # print(y)
+        return y
     
-# net1 = net()
-# optim	=	torch.optim.SGD(net1.parameters(),	lr=0.01)
 
-# def lossf(z):
-#     loss = (z - torch.tensor([4.]))**2
-#     return loss
+net1 = net()
+net1.cuda()
+optim	=	torch.optim.SGD(net1.parameters(),	lr=0.01)
 
-# lossf2 = nn.MSELoss()
+def lossf(z):
+    loss = (z )**2
+    return loss
 
-# for i in range(100):
-#     z = net1()
-#     loss = lossf(z)
-#     optim.zero_grad()
-#     loss.backward()
-#     # net1.ct1.p1.data = net1.ct1.p1.data- net1.ct1.p1.grad.data*0.3
-#     # net1.ct1.p1.grad.zero_()
-#     optim.step()
-#     print(loss,net1.ct1.p1,net1.x,"\n")
+lossf2 = nn.MSELoss()
 
+for i in range(10):
+    z = net1()
+    loss = lossf(z)
+    optim.zero_grad()
+    loss.backward()
+    optim.step()
+    print(z, net1.list,"\n")#, net1.ct2.p, net1.x,
 
-c = list(range(4,-1,-1))
-c1 = [None]*5
-c1[5]=0
+a  = torch.tensor([1.]).cuda()
+b  = torch.tensor([2.])
+c = a * b
+# c = list(range(4,-1,-1))
+# c1 = [None]*5
+# c1[5]=0
 # c.reverse()
 
 a = 1
