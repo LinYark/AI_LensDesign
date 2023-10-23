@@ -105,7 +105,7 @@ class OpticalSystemModule(nn.Module):
         u = self.field
         p = 0
         c = "g"
-        q_0 = cur_EPD_postion*torch.sin(u)
+        q_0 = -cur_EPD_postion*torch.sin(u)
         q_step = step*torch.cos(u)
         for i in range(4):
             if i== 0:
@@ -185,16 +185,16 @@ class OpticalSystemModule(nn.Module):
             else:
                 n = 1
             out_lights = []
-            for light in all_lights[i]:
+            for light in all_lights[surface_1_idx+1]:
                 q_2, u_1, p_1, color = light.q, light.u, light.p, light.c
+                q_1 = q_2 - torch.sin(u_1) * (p_1-surface_1.z)
                 if surface_1.r != torch.inf:
-                    q_1 = q_2 - torch.sin(u_1) * (p_1-surface_1.z)
                     sinI_1 = c*q_1+torch.sin(u_1)
                     I_1 = torch.asin(sinI_1)
                     sinI = n_1*sinI_1/n
                     I = torch.asin(sinI)
                     u = u_1+I-I_1
-                    q = (sinI-torch.sin(u))*r
+                    q = (sinI-torch.sin(u))/c
                     out_lights.append(LightModule(q=q, u=u, p=z, c=color))
                 else:
                     u = torch.asin(torch.sin(u_1)*n_1/n)
@@ -221,11 +221,11 @@ class OpticalSystemModule(nn.Module):
         cur_stop_position = self.get_cur_entrance_puplil_position()
         reverser_lights = self.build_reverse_light(cur_stop_position)
         cur_EPD_position = self.reverse_track(reverser_lights,cur_stop_position)
-        print("\n===============\n")
-        print("cur_EPD_position = ", cur_EPD_position.data)
-        print("zemax_EPD_position = 36.03347")
-        print("detla = ",cur_EPD_position-36.03347)
-        print("\n===============\n")
+        # print("\n===============\n")
+        # print("cur_EPD_position = ", cur_EPD_position.data)
+        # print("zemax_EPD_position = 36.03347")
+        # print("detla = ",cur_EPD_position-36.03347)
+        # print("\n===============\n")
         
         forward_light = self.build_forward_light(cur_EPD_position)
         light_trace = self.forward_track(forward_light)
@@ -235,7 +235,8 @@ class OpticalSystemModule(nn.Module):
 
 class OpticalSystemDrawer():
     def __init__(self) -> None:
-        pass
+        plt.ion()
+        fig, self.ax = plt.subplots()
 
     def set_lights(self,lights):
         self.lights = lights
@@ -243,8 +244,28 @@ class OpticalSystemDrawer():
     def set_surfaces(self,surfaces):
         self.surfaces = surfaces
 
-    def draw():
-        pass
+    def set_start_z(self,z):
+        self.start_z = z
+
+    def draw(self,):
+        all_surface_points,all_edge_points = self.draw_surfaces()
+        self.ax.cla()
+        for points in all_surface_points:
+            self.ax.plot(points[0],points[1],color='black') 
+        for points in all_edge_points:
+            self.ax.plot(points[0],points[1],color='black') 
+
+        all_cross_points = np.array(self.draw_lights())
+        num_face,num_angles,num_q,_ = all_cross_points.shape
+        for i in range(num_angles):
+            for j in range(num_q):
+                z= np.array(all_cross_points[:,i,j,0],dtype='float64')
+                y = np.array(all_cross_points[:,i,j,1],dtype='float64')
+                c = all_cross_points[0,i,j,2]
+                plt.plot(z,y,color=c) 
+        # print(points[-1,:,:,:])
+        plt.show()
+        plt.pause(0.1)
 
     def torch2numpy(self,t):
         return t.detach().cpu().numpy()
@@ -278,91 +299,88 @@ class OpticalSystemDrawer():
                 y = np.full_like(z, -h)
                 all_edge_points.append([z,y])
 
-        for points in all_surface_points:
-            plt.plot(points[0],points[1],color='black') 
-        for points in all_edge_points:
-            plt.plot(points[0],points[1],color='black') 
-        plt.show()
+
         return all_surface_points,all_edge_points
 
     def draw_lights(self,):
         all_cross_points = []
+
         input_lights = self.lights[0]
         cross_points = []
-        for single_angle_lights in input_lights:
-            single_angle_cross_points = []
-            for l in single_angle_lights:
+        start_z = self.start_z
+        for angle_lights in input_lights:
+            angle_cross_points = []
+            for l in angle_lights:
                 u, p, q = self.torch2numpy(l.u), self.torch2numpy(l.p), self.torch2numpy(l.q)
-                if u != 0:
-                    z = -100
+                z = np.array(start_z)
+                if abs(u) > EPSILON:
                     y = np.tan(u) * (z - p + q / (np.sin(u)))
                 else:
-                    z = -100
                     y = q
-                single_angle_cross_points.append([z, y, l.c])
-            cross_points.append(single_angle_cross_points)
+                angle_cross_points.append([z, y, l.c])
+            cross_points.append(angle_cross_points)
         all_cross_points.append(cross_points)
 
-        all_lights = [1]
-        for i in range(len(self.lights) - 2):
-            lights_in, lights_out = self.lights[i], self.lights[i + 1]
+        for space_idx in range(len(self.lights) - 1):
+            lights_in, lights_out = self.lights[space_idx], self.lights[space_idx + 1]
             cross_points = []
-            for j in range(len(lights_in)):
-                l1, l2 = lights_in[j], lights_out[j]
-                if l1.u != 0 and l2.u != 0 and l1.u != l2.u:
-                    z = (
-                        tan(l1.u) * (l1.p - l1.q / sin(l1.u))
-                        - tan(l2.u) * (l2.p - l2.q / sin(l2.u))
-                    ) / (tan(l1.u) - tan(l2.u))
-                    y = tan(l2.u) * (z - l2.p + l2.q / sin(l2.u))
-                elif l1.u == 0 and l2.u != 0:
-                    z = l1.q / tan(l2.u) + l2.p - l2.q / sin(l2.u)
-                    y = l1.q
-                elif l1.u != 0 and l2.u == 0:
-                    z = l2.q / tan(l1.u) + l1.p - l1.q / sin(l1.u)
-                    y = l2.q
-                elif l1.u == 0 and l2.u == 0:
-                    z = l2.p
-                    y = l2.q
-                else:
-                    z = l2.p
-                    y = tan(l2.u) * (z - l2.p + l2.q / sin(l2.u))
-                cross_points.append([z, y, l1.c])
+            for angle_idx in range(len(lights_in)):
+                angle_cross_points = []
+                for q_idx in range(len(lights_in[angle_idx])):
+                    l, l_1 = lights_in[angle_idx][q_idx], lights_out[angle_idx][q_idx]
+                    u, p, q = self.torch2numpy(l.u), self.torch2numpy(l.p), self.torch2numpy(l.q)
+                    u_1, p_1, q_1 = self.torch2numpy(l_1.u), self.torch2numpy(l_1.p), self.torch2numpy(l_1.q)
+                    if abs(u*u_1)>EPSILON and abs(u - u_1)>EPSILON:
+                        delta = u - u_1
+                        z = (tan(u) * (p - q / sin(u)) - tan(u_1) * (p_1 - q_1 / sin(u_1))) / (tan(u) - tan(u_1))
+                        y = tan(u_1) * (z - p_1 + q_1 / sin(u_1))
+                    elif abs(u)<EPSILON and abs(u_1)>EPSILON:
+                        z = q / tan(u_1) + p_1 - q_1 / sin(u_1)
+                        y = q
+                    elif abs(u)>EPSILON and abs(u_1)<EPSILON:
+                        z = q_1 / tan(u) + p - q / sin(u)
+                        y = q_1
+                    elif abs(u)<EPSILON and abs(u_1)<EPSILON:
+                        z = p_1
+                        y = q_1
+                    else:
+                        z = p_1
+                        y = tan(u_1) * (z - p_1 + q_1 / sin(u_1))
+                    angle_cross_points.append([z, y, l.c])
+                cross_points.append(angle_cross_points)
             all_cross_points.append(cross_points)
-
-        input_lights = all_lights[-1]
-        cross_points = []
-        for l in input_lights:
-            if l.u != 0:
-                z = l.p
-                y = tan(l.u) * (z - l.p + l.q / (sin(l.u)))
-            else:
-                z = l.p
-                y = l.q
-            cross_points.append([z, y, l.c])
-        all_cross_points.append(cross_points)
-
-
+        return all_cross_points
 
 if __name__=="__main__":
-    # surfaces = [
-    #     surface_lib(r=200, h=100, t=50, n=1.5168),
-    #     surface_lib(r=-200, h=100, t=60, n=1),
-    #     surface_lib(r="inf", h=20, t="inf"),
-    # ]
+
     osm = OpticalSystemModule()
-    osm.add_surface(200,50,[True,True],1.5168,50)
-    osm.add_surface(-200,60,[True,True],1,50)
+    osm.add_surface(133,50,[True,False],1.5168,40)
+    osm.add_surface(-50,60,[True,False],2.02204,40)
+    osm.add_surface(torch.inf,100,[False,False],1,40)
+    osm.add_surface(100,50,[False,False],1.5168,50)
+    osm.add_surface(-100,60,[False,False],1,50)
+
     osm.add_surface(torch.inf,torch.inf,[False,False],1,30)
-    osm.set_system_param(10,5,stop_face=1)
-    l = osm()
-
+    osm.set_system_param(40,5,stop_face=2)
+    
     osd = OpticalSystemDrawer()
-    osd.set_surfaces(osm.get_surface())
-    osd.set_lights(l)
+    osd.set_start_z(-100)
 
-    osd.draw_surfaces()
-    osd.draw_lights()
-    osd.draw()
+    optim =	torch.optim.SGD(osm.parameters(),	lr=0.1)
+    for i in range(10000):
+        light_trace = osm()
+        if i % 100 ==0:
+            osd.set_surfaces(osm.get_surface())
+            osd.set_lights(light_trace)
+            osd.draw()
+            # print(osm.get_surface()[0].r)
+        loss = torch.abs(light_trace[-1][0][0].q)
+        for idx in range(len(light_trace[-1][0])):
+            loss += torch.abs(light_trace[-1][0][idx].q)
+        if i % 100 ==0:
+            print(loss)
+        optim.zero_grad()
+        loss.backward()
+        optim.step()
 
-    a = 1
+    a= 1
