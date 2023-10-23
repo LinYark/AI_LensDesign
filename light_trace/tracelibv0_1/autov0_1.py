@@ -158,6 +158,8 @@ for i in range(num_lights):
     y = np.array(points[:,i,1],dtype='float64')
     c = points[0,i,2]
     plt.plot(z,y,color=c) #color='b',linestyle = 'dotted',
+print(points[-1,:,1])
+
 
 def get_surface_point(surfaces):
     all_surface_points=[]
