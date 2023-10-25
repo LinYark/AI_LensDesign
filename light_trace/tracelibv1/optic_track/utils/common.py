@@ -1,5 +1,7 @@
 import torch
 import math
+import sys
+sys.dont_write_bytecode = True
 #linyark@hust.edu.cn
 
 EPSILON = 1e-9

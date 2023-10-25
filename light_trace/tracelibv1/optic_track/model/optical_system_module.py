@@ -4,8 +4,9 @@ import numpy as np
 import os
 import sys
 sys.path.append(os.getcwd())
-import matplotlib.pyplot as plt
-from light_trace.tracelibv1.utils.common import *
+
+from light_trace.tracelibv1.optic_track.utils.common import *
+
 class LightModule(nn.Module):
     def __init__(self, q = 10, u = 0, p = 0, c = "r"):
         super(LightModule, self).__init__()
@@ -233,11 +234,17 @@ class OpticalSystemModule(nn.Module):
         self.light_trace = light_trace
         return light_trace
 
+import matplotlib.pyplot as plt
 class OpticalSystemDrawer():
-    def __init__(self) -> None:
-        plt.ion()
-        fig, self.ax = plt.subplots()
+    def __init__(self,draw_flag) -> None:
+        self.draw_flag = draw_flag
+        if self.draw_flag:
+            plt.ion()
+            fig, self.ax = plt.subplots()
 
+    def __del__(self):
+        plt.ioff()
+        
     def set_lights(self,lights):
         self.lights = lights
 
@@ -247,25 +254,33 @@ class OpticalSystemDrawer():
     def set_start_z(self,z):
         self.start_z = z
 
-    def draw(self,):
-        all_surface_points,all_edge_points = self.draw_surfaces()
-        self.ax.cla()
-        for points in all_surface_points:
-            self.ax.plot(points[0],points[1],color='black') 
-        for points in all_edge_points:
-            self.ax.plot(points[0],points[1],color='black') 
+    def print_surface(self,surfaces=None):
+        if surfaces is not None:
+            self.surfaces = surfaces
+            
+        for i in self.surfaces:
+            print(f"[r t h n z], [{i.r.item():8.2f} {i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
 
-        all_cross_points = np.array(self.draw_lights())
-        num_face,num_angles,num_q,_ = all_cross_points.shape
-        for i in range(num_angles):
-            for j in range(num_q):
-                z= np.array(all_cross_points[:,i,j,0],dtype='float64')
-                y = np.array(all_cross_points[:,i,j,1],dtype='float64')
-                c = all_cross_points[0,i,j,2]
-                plt.plot(z,y,color=c) 
-        # print(points[-1,:,:,:])
-        plt.show()
-        plt.pause(0.1)
+    def draw(self,):
+        if self.draw_flag:
+            all_surface_points,all_edge_points = self.draw_surfaces()
+            self.ax.cla()
+            for points in all_surface_points:
+                self.ax.plot(points[0],points[1],color='black') 
+            for points in all_edge_points:
+                self.ax.plot(points[0],points[1],color='black') 
+
+            all_cross_points = np.array(self.draw_lights())
+            num_face,num_angles,num_q,_ = all_cross_points.shape
+            for i in range(num_angles):
+                for j in range(num_q):
+                    z= np.array(all_cross_points[:,i,j,0],dtype='float64')
+                    y = np.array(all_cross_points[:,i,j,1],dtype='float64')
+                    c = all_cross_points[0,i,j,2]
+                    self.ax.plot(z,y,color=c) 
+            # print(points[-1,:,:,:])
+            plt.show()
+            plt.pause(0.1)
 
     def torch2numpy(self,t):
         return t.detach().cpu().numpy()
@@ -324,6 +339,7 @@ class OpticalSystemDrawer():
         for space_idx in range(len(self.lights) - 1):
             lights_in, lights_out = self.lights[space_idx], self.lights[space_idx + 1]
             cross_points = []
+
             for angle_idx in range(len(lights_in)):
                 angle_cross_points = []
                 for q_idx in range(len(lights_in[angle_idx])):
@@ -350,37 +366,48 @@ class OpticalSystemDrawer():
                 cross_points.append(angle_cross_points)
             all_cross_points.append(cross_points)
         return all_cross_points
-
+    
+from light_trace.tracelibv1.optic_track.loss.loss import OpticalLoss
+import time
 if __name__=="__main__":
 
     osm = OpticalSystemModule()
     osm.add_surface(133,50,[True,False],1.5168,40)
-    osm.add_surface(-50,60,[True,False],2.02204,40)
+    osm.add_surface(-100,60,[True,False],2.02204,40)
     osm.add_surface(torch.inf,100,[False,False],1,40)
     osm.add_surface(100,50,[False,False],1.5168,50)
     osm.add_surface(-100,60,[False,False],1,50)
 
     osm.add_surface(torch.inf,torch.inf,[False,False],1,30)
     osm.set_system_param(40,5,stop_face=2)
-    
-    osd = OpticalSystemDrawer()
+    # osm.cuda()
+    draw_flag = 0
+    osd = OpticalSystemDrawer(draw_flag)
     osd.set_start_z(-100)
+    optim = torch.optim.AdamW(osm.parameters(), lr=0.1,betas=(0.9, 0.999), eps=1e-8, weight_decay=0)
+    optical_loss = OpticalLoss()
 
-    optim =	torch.optim.SGD(osm.parameters(),	lr=0.1)
-    for i in range(10000):
+    first_tick = time.time()
+    tick, tock = first_tick, first_tick
+    for i in range(999999):
+            
         light_trace = osm()
-        if i % 100 ==0:
-            osd.set_surfaces(osm.get_surface())
-            osd.set_lights(light_trace)
-            osd.draw()
-            # print(osm.get_surface()[0].r)
-        loss = torch.abs(light_trace[-1][0][0].q)
+        loss = optical_loss.get_RMS_loss(osm.get_surface(),light_trace)
         for idx in range(len(light_trace[-1][0])):
             loss += torch.abs(light_trace[-1][0][idx].q)
-        if i % 100 ==0:
-            print(loss)
+
         optim.zero_grad()
         loss.backward()
         optim.step()
+
+        if i % 2000 ==0:
+            tock = tick
+            tick = time.time()
+            print(f"\n[i loss c_t a_t], [{i:<8} {loss.item():<8.4f} {tick-tock:<8.2f} {tick-first_tick:<8.2f}]") #i loss cost_time all_time 
+            osd.print_surface(osm.get_surface())
+        # if i % 100 ==0:
+        #     osd.set_surfaces(osm.get_surface())
+        #     osd.set_lights(light_trace)
+        #     osd.draw()
 
     a= 1
