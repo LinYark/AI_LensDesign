@@ -27,9 +27,10 @@ class OpticalSystemDrawer():
             
         for i in self.surfaces:
             if i.c != 0:
-                print(f"[r t h n z], [{1/i.c.item():8.2f} {i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
+                print(f"[r t h n z],    [{(1/i.c).item():8.2f} {1/i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
             else:
-                print(f"[r t h n z], [{np.inf:8.2f} {i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
+                t = (1/i.t).item()
+                print(f"[r t h n z],    [{np.inf:8.2f} {(1/i.t).item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
     def draw(self,):
         if self.draw_flag:
             all_surface_points,all_edge_points = self.draw_surfaces()

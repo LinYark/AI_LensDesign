@@ -15,7 +15,7 @@ class OpticalLoss():
             angle_ys = []
             
             for single_light in angle_lights:
-                if single_light.u < EPSILON:
+                if torch.abs(single_light.u) < EPSILON:
                     single_y = single_light.q
                 else:
                     single_y = torch.tan(single_light.u)*(z - single_light.p +single_light.q/torch.sin(single_light.u))
@@ -25,22 +25,24 @@ class OpticalLoss():
             y.append(angle_y_tensors)
         
         y_tensor = torch.stack(y)
-        RMS_loss = torch.mean(torch.var(y_tensor,1))
-        
+        y_var = torch.std(y_tensor,1)
+        RMS_loss = y_var.dot(y_var)
+
         t_loss = []
         for single_face in surface:
-            t = single_face.t
+            t = 1/single_face.t
             if t<30 and t is not torch.inf:
-                t_loss.append(torch.abs(t-30))
+                t_loss.append((t-30)**2)
         if len(t_loss)>0:
-            t_tensor = torch.mean(torch.stack(t_loss))
+            t_tensors = torch.stack(t_loss)
+            t_loss = t_tensors.dot(t_tensors)
         else:
-            t_tensor = torch.tensor(0.)
+            t_loss = torch.tensor(0.)
         # u, u_1 = final_light[0][-2].u, final_light[0][-1].u
         # y_u = torch.abs(torch.abs(u)-0.42)
         # y_u1 = torch.abs(torch.abs(u_1)-0.42)
         # + y_u*5 + y_u1*5
-        y_loss = RMS_loss  + t_tensor
+        y_loss = RMS_loss  + t_loss
         # print(f"u_loss,{final_light[0][-2].u:8.2f}")
         return y_loss , 0 #, u
 

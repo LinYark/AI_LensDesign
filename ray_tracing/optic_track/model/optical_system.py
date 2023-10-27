@@ -31,7 +31,7 @@ class OpticalSystemModule(nn.Module):
     def flash_surface_z_potion(self, ):
         last_positon = torch.tensor(0,dtype=float)
         for i in range(len(self.surfaces)-1):
-            self.surfaces[i+1].z = last_positon + self.surfaces[i].t
+            self.surfaces[i+1].z = last_positon + 1/self.surfaces[i].t
             last_positon = self.surfaces[i+1].z
 
     def get_cur_entrance_puplil_position(self):
@@ -84,13 +84,13 @@ class OpticalSystemModule(nn.Module):
         all_lights = []
         all_lights.append(forward_light)
         for i, surface in enumerate(self.surfaces):
-            c, t_1, n_1, z = surface.c, surface.t, surface.n, surface.z
-            if i > 0:
-                n, t = self.surfaces[i-1].n, self.surfaces[i-1].t
-            else:
-                n, t = 1, 0
+            c, t_1, n_1, z = surface.c, 1/surface.t, surface.n, surface.z
             if c == 0:
                 c = c+EPSILON
+            if i > 0:
+                n, t = self.surfaces[i-1].n, 1/self.surfaces[i-1].t
+            else:
+                n, t = 1, 0
             if c != 0:
                 out_lights = []
                 for single_angle_lights in all_lights[i]:
@@ -140,7 +140,7 @@ class OpticalSystemModule(nn.Module):
         for idx in range(reverse_surface_count):
             surface_1_idx = reverse_surface_count-1 - idx
             surface_1 = self.surfaces[surface_1_idx]
-            c, t, n_1, z = surface_1.c, surface_1.t, surface_1.n, surface_1.z
+            c, t, n_1, z = surface_1.c, 1/surface_1.t, surface_1.n, surface_1.z
             if c == 0:
                 c = c+EPSILON
             if surface_1_idx >0:
