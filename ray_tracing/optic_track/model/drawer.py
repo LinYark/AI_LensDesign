@@ -26,8 +26,10 @@ class OpticalSystemDrawer():
             self.surfaces = surfaces
             
         for i in self.surfaces:
-            print(f"[r t h n z], [{i.r.item():8.2f} {i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
-
+            if i.c != 0:
+                print(f"[r t h n z], [{1/i.c.item():8.2f} {i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
+            else:
+                print(f"[r t h n z], [{np.inf:8.2f} {i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
     def draw(self,):
         if self.draw_flag:
             all_surface_points,all_edge_points = self.draw_surfaces()
@@ -55,7 +57,11 @@ class OpticalSystemDrawer():
     def draw_surfaces(self,):
         all_surface_points=[]
         for s in self.surfaces:
-            r, h, z  = self.torch2numpy(s.r), self.torch2numpy(s.h), self.torch2numpy(s.z) 
+            c, h, z  = self.torch2numpy(s.c), self.torch2numpy(s.h), self.torch2numpy(s.z) 
+            if c != 0:
+                r = 1/self.torch2numpy(s.c)
+            else:
+                r = np.inf
             if r != np.inf:
                 center = z + r
                 if r>0:
@@ -73,15 +79,13 @@ class OpticalSystemDrawer():
 
         all_edge_points = []
         for i,s in enumerate(self.surfaces):
-            r, n, h, z  = self.torch2numpy(s.r), self.torch2numpy(s.n), self.torch2numpy(s.h), self.torch2numpy(s.z) 
+            c, n, h, z  = self.torch2numpy(s.c), self.torch2numpy(s.n), self.torch2numpy(s.h), self.torch2numpy(s.z) 
             if n != 1:
                 z = np.linspace(all_surface_points[i][0][0], all_surface_points[i+1][0][0], 1000)
                 y = np.full_like(z, h)
                 all_edge_points.append([z,y])
                 y = np.full_like(z, -h)
                 all_edge_points.append([z,y])
-
-
         return all_surface_points,all_edge_points
 
     def draw_lights(self,):

@@ -21,7 +21,7 @@ class OpticalSystemModule(nn.Module):
             self.stop_position = 0
         self.f = f
 
-    def add_surface(self, r=torch.inf, t=torch.inf, v=[], n=1, h=torch.inf):
+    def add_surface(self, r, t, v, n, h):
         v = list(map(bool,v))
         self.surfaces.append(SurfaceModule(r,t,v,n,h))
 
@@ -84,13 +84,14 @@ class OpticalSystemModule(nn.Module):
         all_lights = []
         all_lights.append(forward_light)
         for i, surface in enumerate(self.surfaces):
-            c, r, t_1, n_1, z = 1 / surface.r, surface.r, surface.t, surface.n, surface.z
+            c, t_1, n_1, z = surface.c, surface.t, surface.n, surface.z
             if i > 0:
                 n, t = self.surfaces[i-1].n, self.surfaces[i-1].t
             else:
                 n, t = 1, 0
-
-            if surface.r != torch.inf:
+            if c == 0:
+                c = c+EPSILON
+            if c != 0:
                 out_lights = []
                 for single_angle_lights in all_lights[i]:
                     angle_lights = []
@@ -100,11 +101,10 @@ class OpticalSystemModule(nn.Module):
                         sinI = q * c + torch.sin(u)
                         sinI_1 = n * sinI / n_1
                         u_1 = u - torch.asin(sinI) + torch.asin(sinI_1)
-                        q_1 = r * (sinI_1 - torch.sin(u_1))
+                        q_1 = (sinI_1 - torch.sin(u_1)) / c
                         angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
                     out_lights.append(angle_lights)
             else:
-                r, t_1, n_1 = surface.r, surface.t, surface.n 
                 out_lights = []
                 for single_angle_lights in all_lights[i]:
                     angle_lights = []
@@ -140,7 +140,9 @@ class OpticalSystemModule(nn.Module):
         for idx in range(reverse_surface_count):
             surface_1_idx = reverse_surface_count-1 - idx
             surface_1 = self.surfaces[surface_1_idx]
-            c, r, t, n_1, z = 1 / surface_1.r, surface_1.r, surface_1.t, surface_1.n, surface_1.z
+            c, t, n_1, z = surface_1.c, surface_1.t, surface_1.n, surface_1.z
+            if c == 0:
+                c = c+EPSILON
             if surface_1_idx >0:
                 surface = self.surfaces[surface_1_idx-1]
                 n = surface.n
@@ -149,8 +151,8 @@ class OpticalSystemModule(nn.Module):
             out_lights = []
             for light in all_lights[surface_1_idx+1]:
                 q_2, u_1, p_1, color = light.q, light.u, light.p, light.c
-                q_1 = q_2 - torch.sin(u_1) * (p_1-surface_1.z)
-                if surface_1.r != torch.inf:
+                q_1 = q_2 - torch.sin(u_1) * (p_1-z)
+                if c != 0:
                     sinI_1 = c*q_1+torch.sin(u_1)
                     I_1 = torch.asin(sinI_1)
                     sinI = n_1*sinI_1/n
