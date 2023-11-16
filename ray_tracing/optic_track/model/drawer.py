@@ -8,6 +8,7 @@ class OpticalSystemDrawer():
         if self.draw_flag:
             plt.ion()
             fig, self.ax = plt.subplots()
+        pass
 
     def __del__(self):
         plt.ioff()
@@ -31,26 +32,49 @@ class OpticalSystemDrawer():
             else:
                 t = (1/i.t).item()
                 print(f"[r t h n z],    [{np.inf:8.2f} {(1/i.t).item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]")
-    def draw(self,):
-        if self.draw_flag:
-            all_surface_points,all_edge_points = self.draw_surfaces()
-            self.ax.cla()
-            for points in all_surface_points:
-                self.ax.plot(points[0],points[1],color='black') 
-            for points in all_edge_points:
-                self.ax.plot(points[0],points[1],color='black') 
 
-            all_cross_points = np.array(self.draw_lights())
-            num_face,num_angles,num_q,_ = all_cross_points.shape
-            for i in range(num_angles):
-                for j in range(num_q):
-                    z= np.array(all_cross_points[:,i,j,0],dtype='float64')
-                    y = np.array(all_cross_points[:,i,j,1],dtype='float64')
-                    c = all_cross_points[0,i,j,2]
-                    self.ax.plot(z,y,color=c) 
-            # print(points[-1,:,:,:])
-            plt.show()
-            plt.pause(0.1)
+    def draw(self,draw_flag):
+        if draw_flag == 1:
+            self.draw_dynamic()
+        else:
+            self.draw_stop()
+
+    def draw_dynamic(self,):
+        all_surface_points,all_edge_points = self.draw_surfaces()
+        self.ax.cla()
+        for points in all_surface_points:
+            self.ax.plot(points[0],points[1],color='black') 
+        for points in all_edge_points:
+            self.ax.plot(points[0],points[1],color='black') 
+
+        all_cross_points = np.array(self.draw_lights())
+        num_face,num_angles,num_q,_ = all_cross_points.shape
+        for i in range(num_angles):
+            for j in range(num_q):
+                z= np.array(all_cross_points[:,i,j,0],dtype='float64')
+                y = np.array(all_cross_points[:,i,j,1],dtype='float64')
+                c = all_cross_points[0,i,j,2]
+                self.ax.plot(z,y,color=c) 
+        # print(points[-1,:,:,:])
+        plt.show()
+        plt.pause(0.1)
+
+    def draw_stop(self,):
+        all_surface_points,all_edge_points = self.draw_surfaces()
+        for points in all_surface_points:
+            plt.plot(points[0],points[1],color='black') 
+        for points in all_edge_points:
+            plt.plot(points[0],points[1],color='black') 
+
+        all_cross_points = np.array(self.draw_lights())
+        num_face,num_angles,num_q,_ = all_cross_points.shape
+        for i in range(num_angles):
+            for j in range(num_q):
+                z= np.array(all_cross_points[:,i,j,0],dtype='float64')
+                y = np.array(all_cross_points[:,i,j,1],dtype='float64')
+                c = all_cross_points[0,i,j,2]
+                plt.plot(z,y,color=c) 
+        plt.show()
 
     def torch2numpy(self,t):
         return t.detach().cpu().numpy()
@@ -63,6 +87,8 @@ class OpticalSystemDrawer():
                 r = 1/self.torch2numpy(s.c)
             else:
                 r = np.inf
+            if abs(h) > abs(r) :
+                h = abs(r)
             if r != np.inf:
                 center = z + r
                 if r>0:

@@ -118,11 +118,13 @@ class OpticalSystemModule(nn.Module):
                             q_1=0
                         else:
                             q_1 = torch.cos(u_1)*q/torch.cos(u)
+                        if torch.isnan(u_1):
+                            a= 1
                         angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
                     out_lights.append(angle_lights)
             all_lights.append(out_lights)
         return all_lights
-
+    
     def reverse_track(self,reverse_lights,cur_stop_position):
         front_material = 1
         for i,surface in enumerate(self.surfaces):

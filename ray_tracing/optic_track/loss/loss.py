@@ -29,10 +29,13 @@ class OpticalLoss():
         RMS_loss = y_var.dot(y_var)
 
         t_loss = []
+        air_thick_thr, glass_thick_thr = 100,20
         for single_face in surface:
-            t = 1/single_face.t
-            if t<30 and t is not torch.inf:
-                t_loss.append((t-30)**2)
+            t, n = 1/single_face.t, single_face.n
+            if t>air_thick_thr and t != torch.inf and n==1:
+                t_loss.append((t-air_thick_thr)**2)
+            if t>glass_thick_thr and t != torch.inf and n!=1:
+                t_loss.append((t-glass_thick_thr)**2)
         if len(t_loss)>0:
             t_tensors = torch.stack(t_loss)
             t_loss = t_tensors.dot(t_tensors)
