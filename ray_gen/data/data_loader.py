@@ -8,16 +8,16 @@ class DataLoaderX(DataLoader):
         return BackgroundGenerator(super().__iter__())
 
 class DataLoadBuilder():
-    def build_train_loader(batchsize=16):
+    def build_train_loader(self,):
         myDataset = RangeData()
         train_loader = DataLoaderX(
-            myDataset, shuffle=True, batch_size=batchsize, num_workers=12, drop_last=True
+            myDataset, shuffle=True, batch_size=4, num_workers=4, drop_last=True
         )
         return train_loader
     
-    def build_valid_loader(batchsize=16):
+    def build_valid_loader(self,):
         myDataset = RangeData()
         train_loader = DataLoaderX(
-            myDataset, shuffle=True, batch_size=batchsize, num_workers=12, drop_last=True
+            myDataset, shuffle=True, batch_size=4, num_workers=4, drop_last=True
         )
         return train_loader
