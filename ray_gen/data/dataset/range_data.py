@@ -7,8 +7,8 @@ class RangeData(Dataset):
         self.g_t_max = 30
         self.a_t_min = 10
         self.a_t_max = 200
-        self.epd = 1#random
-        self.hfov = 1#random
+        self.epd = 1  #random
+        self.hfov = 1 #random
 
     def __getitem__(self, idx):
         a = torch.tensor([1.,1.])
