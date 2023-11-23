@@ -20,7 +20,7 @@ class FCSmall(nn.Module):
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Linear(64, out_size),
-            nn.Sigmoid()
+            nn.Hardtanh(),
         )
 
     def forward(self, x):
