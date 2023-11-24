@@ -11,7 +11,9 @@ class ModelBuilder(nn.Module):
     def __init__(self):
         super(ModelBuilder, self).__init__()
         self.model = FCSmall()
+        self.map = nn.Sigmoid()
 
     def forward(self, x):
         output = self.model(x)
+        # output_maped = self.map(output) * 10 - 5
         return output

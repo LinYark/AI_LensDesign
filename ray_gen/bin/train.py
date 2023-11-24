@@ -11,7 +11,7 @@ from ray_gen.data.data_loader import DataLoadBuilder
 from ray_gen.optimizer.optim_builder import OptimBuilder
 from ray_gen.loss.loss_builder import LossBuilder
 from ray_gen.utils.common import seed_torch
-from ray_gen.connect.connect_builder import ConnectBuilder
+from ray_gen.ray_tracing.connect_builder import ConnectBuilder
 
 
 def train():
