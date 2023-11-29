@@ -11,7 +11,7 @@ from ray_gen.data.data_loader import DataLoadBuilder
 from ray_gen.optimizer.optim_builder import OptimBuilder
 from ray_gen.loss.loss_builder import LossBuilder
 from ray_gen.utils.common import seed_torch
-from ray_gen.ray_tracing.connect_builder import ConnectBuilder
+from ray_gen.loss.loss_builder import LossBuilder
 
 
 def train():
@@ -28,9 +28,9 @@ def train():
     for epoch in range(all_epoch):
         train_loss = []
         for i, data in enumerate(train_data_loader):
-            outputs = model(data)
+            lens_system = model(data)
 
-            loss = loss_obj.get_loss(outputs)
+            loss = loss_obj.get_loss(lens_system)
             optim.zero_grad()
             loss.backward()
             optim.step()

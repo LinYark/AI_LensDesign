@@ -36,12 +36,13 @@ class TracingBuilder:
             osm_list.append(osm)
         return osm_list
 
-    def forward(self, input):
+    def get_rays_and_surfaces(self, input):
         config_list = self.get_config_list(input)
         osm_list = self.get_model_list(config_list)
-        output_list = []
+        rays_list, surfaces_list = [], []
         for i, osm in osm_list:
             rays = osm()
             surfaces = osm.get_surface()
-            output_list.append([rays, surfaces])
-        return output_list
+            rays_list.append(rays)
+            surfaces_list.append(surfaces)
+        return rays_list, surfaces_list
