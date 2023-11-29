@@ -10,12 +10,14 @@ class NormalLoss:
         pass
 
     def get_source_data(self, lens_system):
-        rtb = RayTracingBuilder(lens_system)
-        rays_list, surfaces_list = rtb.get_rays_and_surfaces()
+        rtb = RayTracingBuilder()
+        rays_list, surfaces_list = rtb.get_rays_and_surfaces(lens_system)
         return rays_list, surfaces_list
 
     def get_loss(self, lens_system):
-        rays_list, surfaces_list = self.get_source_data()
+        rays_list, surfaces_list = self.get_source_data(lens_system)
+        RMS_loss = self.get_RMS_loss(rays_list, surfaces_list)
+        return RMS_loss
 
     def get_RMS_loss(self, rays_list, surfaces_list):
         bs = len(surfaces_list)

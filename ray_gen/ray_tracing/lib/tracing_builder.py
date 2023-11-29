@@ -29,8 +29,9 @@ class TracingBuilder:
 
     def get_model_list(self, config_list):
         osm_list = []
-        for i, batch in config_list:
+        for batch in config_list:
             osm = OpticalSystemModule()
+            osm.set_system_param(40, 5, stop_face=0)
             for surface in batch:
                 osm.add_surface(surface)
             osm_list.append(osm)
@@ -40,7 +41,7 @@ class TracingBuilder:
         config_list = self.get_config_list(input)
         osm_list = self.get_model_list(config_list)
         rays_list, surfaces_list = [], []
-        for i, osm in osm_list:
+        for osm in osm_list:
             rays = osm()
             surfaces = osm.get_surface()
             rays_list.append(rays)

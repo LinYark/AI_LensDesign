@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 class OpticalSystemDrawer:
-    def __init__(self, draw_flag) -> None:
+    def __init__(self, draw_flag=False) -> None:
         self.draw_flag = draw_flag
         if self.draw_flag:
             plt.ion()
