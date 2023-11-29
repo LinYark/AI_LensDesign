@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 
-from ..utils.common import *
+EPSILON = 1e-9
 from .surface import SurfaceModule
 from .light import LightModule
 
@@ -23,8 +23,8 @@ class OpticalSystemModule(nn.Module):
         self.f = f
 
     def add_surface(self, surface):
-        r, t, n, h = surface
-        self.surfaces.append(SurfaceModule(r, t, n, h))
+        c, t, n, h = surface
+        self.surfaces.append(SurfaceModule(c, t, n, h))
 
     def get_surface(self):
         return self.surfaces

@@ -9,7 +9,7 @@ class SurfaceModule(nn.Module):
         self.t = 1.0 / t
         self.n = torch.tensor(n, dtype=float)
         self.h = torch.tensor(h, dtype=float)
-        self.z = torch.tensor(0, dtype=float, requires_grad=True)
+        self.z = torch.tensor(0, dtype=float)
 
     def forward_track(self):
         pass

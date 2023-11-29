@@ -49,7 +49,7 @@ if __name__ == "__main__":
                 print("============================================")
                 osd.set_surfaces(osm.get_surface())
                 osd.set_lights(light_trace)
-                osd.draw(draw_flag)
+                osd.draw()
                 osd.print_surface(osm.get_surface())
             loss, u = optical_loss.get_RMS_loss(osm.get_surface(), light_trace)
             optim.zero_grad()

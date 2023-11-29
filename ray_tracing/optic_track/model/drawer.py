@@ -38,8 +38,8 @@ class OpticalSystemDrawer:
                     f"[r t h n z],    [{np.inf:8.2f} {(1/i.t).item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]"
                 )
 
-    def draw(self, draw_flag):
-        if draw_flag == 1:
+    def draw(self):
+        if self.draw_flag == 1:
             self.draw_dynamic()
         else:
             self.draw_stop()
