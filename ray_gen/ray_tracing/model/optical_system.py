@@ -57,7 +57,7 @@ class OpticalSystemModule(nn.Module):
         u = 0 / 180 * torch.pi
         p = 0
         c = "b"
-        for i in range(4):
+        for i in range(2):
             if i == 0:
                 field_center_light.append(LightModule(q=0, u=u, p=p, c=c))
             else:
@@ -70,7 +70,7 @@ class OpticalSystemModule(nn.Module):
         c = "g"
         q_0 = -cur_EPD_postion * torch.sin(u)
         q_step = step * torch.cos(u)
-        for i in range(4):
+        for i in range(2):
             if i == 0:
                 field_edge_light.append(LightModule(q=q_0, u=u, p=p, c=c))
             else:
@@ -84,6 +84,7 @@ class OpticalSystemModule(nn.Module):
     def forward_track(self, forward_light):
         all_lights = []
         all_lights.append(forward_light)
+        all_sinI = []
         for i, surface in enumerate(self.surfaces):
             c, t_1, n_1, z = surface.c, 1 / surface.t, surface.n, surface.z
             if c == 0:
@@ -104,6 +105,13 @@ class OpticalSystemModule(nn.Module):
                         u_1 = u - torch.asin(sinI) + torch.asin(sinI_1)
                         q_1 = (sinI_1 - torch.sin(u_1)) / c
                         angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
+                        
+                        if torch.isnan(q_1) or torch.isnan(u_1) or torch.isnan(z):
+                            a = 1
+                        if sinI > 1:
+                            all_sinI.append(sinI)
+                        if sinI_1 > 1:
+                            all_sinI.append(sinI_1)
                     out_lights.append(angle_lights)
             else:
                 out_lights = []
@@ -124,7 +132,7 @@ class OpticalSystemModule(nn.Module):
                         angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
                     out_lights.append(angle_lights)
             all_lights.append(out_lights)
-        return all_lights
+        return all_lights, all_sinI
 
     def reverse_track(self, reverse_lights, cur_stop_position):
         front_material = 1

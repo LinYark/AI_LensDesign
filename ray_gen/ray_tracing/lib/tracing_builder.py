@@ -16,34 +16,36 @@ class TracingBuilder:
         out = (input * 50) + 60  # 10-110
         return out
 
-    def get_config_list(self, input):
+    def get_config_list(self, lens_system):
         config_list = []
-        for i, bs in enumerate(input):
+        for i, bs in enumerate(lens_system):
             config = [
                 (bs[0], self.g_thick_map(bs[1]), 1.5168, 40),
                 (bs[2], self.a_thick_map(bs[3]), 1, 40),
-                (torch.inf, torch.inf, 1, 40),
+                (0, torch.inf, 1, 40),
             ]
             config_list.append(config)
         return config_list
 
-    def get_model_list(self, config_list):
+    def get_model_list(self, sys_param, config_list):
         osm_list = []
-        for batch in config_list:
-            osm = OpticalSystemModule()
-            osm.set_system_param(40, 5, stop_face=0)
+        for i, batch in enumerate(config_list):
+            osm = OpticalSystemModule()  # .cuda()
+            epd, field = sys_param[i][0].item() * 20, sys_param[i][1].item() * 5
+            osm.set_system_param(epd, field, stop_face=0)
             for surface in batch:
                 osm.add_surface(surface)
             osm_list.append(osm)
         return osm_list
 
-    def get_rays_and_surfaces(self, input):
-        config_list = self.get_config_list(input)
-        osm_list = self.get_model_list(config_list)
-        rays_list, surfaces_list = [], []
+    def get_rays_and_surfaces(self, sys_param, lens_system):
+        config_list = self.get_config_list(lens_system)
+        osm_list = self.get_model_list(sys_param, config_list)
+        rays_list, sins_list, surfaces_list = [], [], []
         for osm in osm_list:
-            rays = osm()
+            rays, sins = osm()
             surfaces = osm.get_surface()
             rays_list.append(rays)
+            sins_list.append(sins)
             surfaces_list.append(surfaces)
-        return rays_list, surfaces_list
+        return rays_list, sins_list, surfaces_list

@@ -20,6 +20,6 @@ class Optim:
 
     def build_scheduler(self, optim):
         scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optim, T_0=10, T_mult=1, eta_min=1e-5, last_epoch=-1, verbose=True
+            optim, T_0=20, T_mult=1, eta_min=1e-5, last_epoch=-1, verbose=True
         )
         return scheduler

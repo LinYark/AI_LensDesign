@@ -7,17 +7,18 @@ class DataLoaderX(DataLoader):
     def __iter__(self):
         return BackgroundGenerator(super().__iter__())
 
-class DataLoadBuilder():
-    def build_train_loader(self,):
+
+class DataLoadBuilder:
+    def build_train_loader(self):
         myDataset = RangeData()
         train_loader = DataLoaderX(
-            myDataset, shuffle=True, batch_size=4, num_workers=4, drop_last=True
+            myDataset, shuffle=True, batch_size=8, num_workers=8, drop_last=True
         )
         return train_loader
-    
-    def build_valid_loader(self,):
+
+    def build_valid_loader(self):
         myDataset = RangeData()
         train_loader = DataLoaderX(
-            myDataset, shuffle=True, batch_size=4, num_workers=4, drop_last=True
+            myDataset, shuffle=True, batch_size=8, num_workers=8, drop_last=True
         )
         return train_loader

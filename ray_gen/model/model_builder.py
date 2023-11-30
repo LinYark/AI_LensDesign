@@ -15,5 +15,5 @@ class ModelBuilder(nn.Module):
 
     def forward(self, x):
         output = self.model(x)
-        # output_maped = self.map(output) * 10 - 5
+        output_maped = self.map(output)
         return output

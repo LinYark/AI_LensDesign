@@ -1,6 +1,7 @@
 import os
 import sys
 
+sys.dont_write_bytecode = True
 sys.path.append(os.getcwd())
 import numpy as np
 import os
@@ -18,7 +19,7 @@ def train():
     all_epoch = 999
     seed_torch()
 
-    model = ModelBuilder()  # .cuda().train()
+    model = ModelBuilder().train()  # .cuda().train()
     train_data_loader = DataLoadBuilder().build_train_loader()
     val_data_loader = DataLoadBuilder().build_valid_loader()
     # a = next(iter(train_data_loader))
@@ -27,10 +28,11 @@ def train():
     loss_obj = LossBuilder().get_loss_instance()
     for epoch in range(all_epoch):
         train_loss = []
-        for i, data in enumerate(train_data_loader):
-            lens_system = model(data)
+        for i, sys_param in enumerate(train_data_loader):
+            # sys_param = sys_param.cuda()
+            lens_system = model(sys_param)
 
-            loss = loss_obj.get_loss(lens_system)
+            loss = loss_obj.get_loss(sys_param, lens_system)
             optim.zero_grad()
             loss.backward()
             optim.step()
@@ -39,7 +41,7 @@ def train():
 
         scheduler.step()
         if epoch > 999:
-            shotpath = "./snapshot/step1"
+            shotpath = "./ray_gen/snapshot/step1"
             os.makedirs(shotpath, exist_ok=True)
             torch.save(
                 {
@@ -53,3 +55,4 @@ def train():
         train_loss = np.mean(train_loss, 0)
         train_loss_info = "train mean loss = {} ".format(train_loss)
         print(train_loss_info)
+        print(lens_system[-1])
