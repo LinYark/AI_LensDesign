@@ -54,7 +54,7 @@ if __name__ == "__main__":
             loss, u = optical_loss.get_RMS_loss(osm.get_surface(), light_trace)
             optim.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm(osm.parameters(), max_norm=20, norm_type=2)
+            nn.utils.clip_grad_norm(osm.parameters(), max_norm=10, norm_type=2)
             optim.step()
             if i % flash_hz == 0:
                 tock = tick

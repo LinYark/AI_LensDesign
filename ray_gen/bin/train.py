@@ -35,6 +35,9 @@ def train():
             loss = loss_obj.get_loss(sys_param, lens_system)
             optim.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(
+                parameters=model.parameters(), max_norm=10, norm_type=2
+            )
             optim.step()
 
             train_loss.append(loss.item())

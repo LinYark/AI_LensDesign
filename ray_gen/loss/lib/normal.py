@@ -23,6 +23,8 @@ class NormalLoss:
         RMS_loss = self.get_RMS_loss(rays_list, sins_list, surfaces_list)
         sins_loss = self.get_sin_loss(rays_list, sins_list, surfaces_list)
         all_loss = RMS_loss + sins_loss
+        if torch.isnan(all_loss):
+            a = 1
         return all_loss
 
     def get_RMS_loss(self, rays_list, sins_list, surfaces_list):
@@ -65,6 +67,8 @@ class NormalLoss:
         if len(RMS_loss_list) > 0:
             RMS_loss_list_torch = torch.sum(torch.stack(RMS_loss_list))
             y_loss = RMS_loss_list_torch
+        if torch.isnan(y_loss):
+            a = 1
         return y_loss
 
     def get_sin_loss(self, rays_list, sins_list, surfaces_list):
