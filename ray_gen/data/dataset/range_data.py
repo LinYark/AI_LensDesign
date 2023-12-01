@@ -4,7 +4,7 @@ import torch
 
 class RangeData(Dataset):
     def __init__(self):
-        self.num = 2000
+        self.num = 20000
         # self.g_t_min = 5
         # self.g_t_max = 20
         # self.a_t_min = 10

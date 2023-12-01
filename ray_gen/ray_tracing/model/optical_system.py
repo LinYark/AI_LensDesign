@@ -57,7 +57,7 @@ class OpticalSystemModule(nn.Module):
         u = 0 / 180 * torch.pi
         p = 0
         c = "b"
-        for i in range(2):
+        for i in range(4):
             if i == 0:
                 field_center_light.append(LightModule(q=0, u=u, p=p, c=c))
             else:
@@ -70,7 +70,7 @@ class OpticalSystemModule(nn.Module):
         c = "g"
         q_0 = -cur_EPD_postion * torch.sin(u)
         q_step = step * torch.cos(u)
-        for i in range(2):
+        for i in range(4):
             if i == 0:
                 field_edge_light.append(LightModule(q=q_0, u=u, p=p, c=c))
             else:
@@ -105,12 +105,12 @@ class OpticalSystemModule(nn.Module):
                         u_1 = u - torch.asin(sinI) + torch.asin(sinI_1)
                         q_1 = (sinI_1 - torch.sin(u_1)) / c
                         angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
-                        
+
                         if torch.isnan(q_1) or torch.isnan(u_1) or torch.isnan(z):
                             a = 1
-                        if sinI > 1:
+                        if torch.abs(sinI) > 1:
                             all_sinI.append(sinI)
-                        if sinI_1 > 1:
+                        if torch.abs(sinI_1) > 1:
                             all_sinI.append(sinI_1)
                     out_lights.append(angle_lights)
             else:

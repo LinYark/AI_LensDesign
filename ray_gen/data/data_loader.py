@@ -12,13 +12,13 @@ class DataLoadBuilder:
     def build_train_loader(self):
         myDataset = RangeData()
         train_loader = DataLoaderX(
-            myDataset, shuffle=True, batch_size=8, num_workers=8, drop_last=True
+            myDataset, shuffle=True, batch_size=16, num_workers=8, drop_last=True
         )
         return train_loader
 
     def build_valid_loader(self):
         myDataset = RangeData()
         train_loader = DataLoaderX(
-            myDataset, shuffle=True, batch_size=8, num_workers=8, drop_last=True
+            myDataset, shuffle=True, batch_size=16, num_workers=8, drop_last=True
         )
         return train_loader

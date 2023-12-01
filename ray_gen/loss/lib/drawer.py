@@ -1,15 +1,15 @@
-from ..utils.common import *
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
+import os
+import datetime
+
+EPSILON = 1e-9
 
 
 class OpticalSystemDrawer:
-    def __init__(self, draw_flag=False) -> None:
-        self.draw_flag = draw_flag
-        if self.draw_flag:
-            plt.ion()
-            fig, self.ax = plt.subplots()
-        pass
+    def __init__(self) -> None:
+        self.set_start_z(-100)
 
     def __del__(self):
         plt.ioff()
@@ -26,7 +26,7 @@ class OpticalSystemDrawer:
     def print_surface(self, surfaces=None):
         if surfaces is not None:
             self.surfaces = surfaces
-
+        print("========================")
         for i in self.surfaces:
             if i.c != 0:
                 print(
@@ -38,33 +38,35 @@ class OpticalSystemDrawer:
                     f"[r t h n z],    [{np.inf:8.2f} {(1/i.t).item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]"
                 )
 
+    def show(self, listener):
+        bs = len(listener[0])
+        bs = np.clip(bs, 0, 6)
+        plt.figure(figsize=(24, 16), dpi=80)
+        for idx in range(bs):
+            # i, j = idx / 2, idx % j
+            plt.subplot(3, 2, idx + 1)
+            self.set_surfaces(listener[2][idx])
+            self.set_lights(listener[0][idx])
+            self.draw()
+            self.print_surface(listener[2][idx])
+
+        # plt.get_current_fig_manager().full_screen_toggle()
+        current_time = (
+            str(datetime.datetime.now())
+            .replace(".", "_")
+            .replace(":", "_")
+            .replace(" ", "_")
+        )
+        target_dir = "./ray_gen/snapshot/img"
+        os.makedirs(target_dir, exist_ok=True)
+        target_path = f"{target_dir}/{current_time}.png"
+        plt.savefig(target_path)
+
+        plt.show(block=False)
+        plt.pause(5)
+        plt.close("all")
+
     def draw(self):
-        if self.draw_flag == 1:
-            self.draw_dynamic()
-        else:
-            self.draw_stop()
-
-    def draw_dynamic(self):
-        all_surface_points, all_edge_points = self.draw_surfaces()
-        self.ax.cla()
-        for points in all_surface_points:
-            self.ax.plot(points[0], points[1], color="black")
-        for points in all_edge_points:
-            self.ax.plot(points[0], points[1], color="black")
-
-        all_cross_points = np.array(self.draw_lights())
-        num_face, num_angles, num_q, _ = all_cross_points.shape
-        for i in range(num_angles):
-            for j in range(num_q):
-                z = np.array(all_cross_points[:, i, j, 0], dtype="float64")
-                y = np.array(all_cross_points[:, i, j, 1], dtype="float64")
-                c = all_cross_points[0, i, j, 2]
-                self.ax.plot(z, y, color=c)
-        # print(points[-1,:,:,:])
-        plt.show()
-        plt.pause(0.1)
-
-    def draw_stop(self):
         all_surface_points, all_edge_points = self.draw_surfaces()
         for points in all_surface_points:
             plt.plot(points[0], points[1], color="black")
@@ -79,10 +81,11 @@ class OpticalSystemDrawer:
                 y = np.array(all_cross_points[:, i, j, 1], dtype="float64")
                 c = all_cross_points[0, i, j, 2]
                 plt.plot(z, y, color=c)
-        plt.show()
 
     def torch2numpy(self, t):
-        return t.detach().cpu().numpy()
+        if torch.is_tensor(t):
+            t = t.detach().cpu().numpy()
+        return t
 
     def draw_surfaces(self):
         all_surface_points = []

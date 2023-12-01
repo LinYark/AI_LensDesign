@@ -1,12 +1,10 @@
 import torch
 from ..model.optical_system import OpticalSystemModule
-from ..model.drawer import OpticalSystemDrawer
 
 
 class TracingBuilder:
     def __init__(self) -> None:
-        self.drawer = OpticalSystemDrawer()
-        self.drawer.set_start_z(-100)
+        pass
 
     def g_thick_map(self, input):
         out = (input * 10) + 15  # 5-25
@@ -31,7 +29,7 @@ class TracingBuilder:
         osm_list = []
         for i, batch in enumerate(config_list):
             osm = OpticalSystemModule()  # .cuda()
-            epd, field = sys_param[i][0].item() * 20, sys_param[i][1].item() * 5
+            epd, field = sys_param[i][0].item() * 40, sys_param[i][1].item() * 20
             osm.set_system_param(epd, field, stop_face=0)
             for surface in batch:
                 osm.add_surface(surface)

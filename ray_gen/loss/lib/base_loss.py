@@ -5,7 +5,7 @@ from ...ray_tracing.ray_tracing_builder import RayTracingBuilder
 EPSILON = 1e-9
 
 
-class NormalLoss:
+class BaseLoss:
     def __init__(self) -> None:
         pass
 
@@ -22,10 +22,11 @@ class NormalLoss:
         )
         RMS_loss = self.get_RMS_loss(rays_list, sins_list, surfaces_list)
         sins_loss = self.get_sin_loss(rays_list, sins_list, surfaces_list)
-        all_loss = RMS_loss + sins_loss
+        thick_loss = self.get_thick_loss(lens_system)
+        all_loss = RMS_loss + sins_loss + thick_loss * 10
         if torch.isnan(all_loss):
             a = 1
-        return all_loss
+        return all_loss, rays_list, sins_list, surfaces_list
 
     def get_RMS_loss(self, rays_list, sins_list, surfaces_list):
         bs = len(surfaces_list)
@@ -65,7 +66,7 @@ class NormalLoss:
 
         y_loss = torch.tensor(0.0)
         if len(RMS_loss_list) > 0:
-            RMS_loss_list_torch = torch.sum(torch.stack(RMS_loss_list))
+            RMS_loss_list_torch = torch.mean(torch.stack(RMS_loss_list))
             y_loss = RMS_loss_list_torch
         if torch.isnan(y_loss):
             a = 1
@@ -85,6 +86,22 @@ class NormalLoss:
             sins_loss_list.append(sins_loss)
         y_loss = torch.tensor(0.0)
         if len(sins_loss_list) > 0:
-            sins_loss_list_torch = torch.sum(torch.stack(sins_loss_list))
+            sins_loss_list_torch = torch.mean(torch.stack(sins_loss_list))
             y_loss = sins_loss_list_torch
+        return y_loss
+
+    def get_thick_loss(self, lens_system):
+        bs = len(lens_system)
+        thick_loss_list = []
+        for i in range(bs):
+            thicks = lens_system[i][1::2]
+            thicks_fail = thicks[torch.where((thicks < -1) + (thicks > 1))]
+            if len(thicks_fail) == 0:
+                continue
+            thick_loss = thicks_fail.dot(thicks_fail - 0.5)
+            thick_loss_list.append(thick_loss)
+        y_loss = torch.tensor(0.0)
+        if len(thick_loss_list) > 0:
+            thick_loss_list_torch = torch.mean(torch.stack(thick_loss_list))
+            y_loss = thick_loss_list_torch
         return y_loss
