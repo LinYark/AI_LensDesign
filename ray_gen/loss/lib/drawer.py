@@ -23,24 +23,29 @@ class OpticalSystemDrawer:
     def set_start_z(self, z):
         self.start_z = z
 
-    def print_surface(self, surfaces=None):
+    def print_surface(self, surfaces=None, epoch=0, shotpath=None):
         if surfaces is not None:
             self.surfaces = surfaces
-        print("========================")
-        for i in self.surfaces:
-            if i.c != 0:
-                print(
-                    f"[r t h n z],    [{(1/i.c).item():8.2f} {1/i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]"
-                )
-            else:
-                t = (1 / i.t).item()
-                print(
-                    f"[r t h n z],    [{np.inf:8.2f} {(1/i.t).item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]"
-                )
 
-    def show(self, listener):
+        os.makedirs(shotpath, exist_ok=True)
+        with open(f"{shotpath}/test.txt", "a") as file:
+            gap = "========================"
+            print(gap)
+            print(gap, file=file)
+            for i in self.surfaces:
+                if i.c != 0:
+                    content = f"{epoch} [r t h n z], [{(1/i.c).item():8.2f} {1/i.t.item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]"
+                else:
+                    t = (1 / i.t).item()
+                    content = f"{epoch} [r t h n z], [{np.inf:8.2f} {(1/i.t).item():8.2f} {i.h.item():8.2f} {i.n.item():8.2f} {i.z.item():8.2f}]"
+                print(content, file=file)
+                print(content)
+
+    def show(self, listener, epoch, shotpath):
         bs = len(listener[0])
         bs = np.clip(bs, 0, 6)
+
+        plt.cla()
         plt.figure(figsize=(24, 16), dpi=80)
         for idx in range(bs):
             # i, j = idx / 2, idx % j
@@ -48,7 +53,7 @@ class OpticalSystemDrawer:
             self.set_surfaces(listener[2][idx])
             self.set_lights(listener[0][idx])
             self.draw()
-            self.print_surface(listener[2][idx])
+            self.print_surface(listener[2][idx], epoch, shotpath)
 
         # plt.get_current_fig_manager().full_screen_toggle()
         current_time = (
@@ -57,14 +62,14 @@ class OpticalSystemDrawer:
             .replace(":", "_")
             .replace(" ", "_")
         )
-        target_dir = "./ray_gen/snapshot/img"
+        target_dir = f"{shotpath}/img"
         os.makedirs(target_dir, exist_ok=True)
         target_path = f"{target_dir}/{current_time}.png"
         plt.savefig(target_path)
 
-        plt.show(block=False)
-        plt.pause(5)
-        plt.close("all")
+        # plt.show(block=False)
+        # plt.pause(5)
+        # plt.close("all")
 
     def draw(self):
         all_surface_points, all_edge_points = self.draw_surfaces()

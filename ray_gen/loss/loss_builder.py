@@ -19,5 +19,5 @@ class LossBuilder:
         self.listener = (rays_list, sins_list, surfaces_list)
         return all_loss
 
-    def show(self):
-        self.drawer.show(self.listener)
+    def show(self, epoch, shotpath):
+        self.drawer.show(self.listener, epoch, shotpath)

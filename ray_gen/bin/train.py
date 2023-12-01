@@ -16,7 +16,7 @@ from ray_gen.loss.loss_builder import LossBuilder
 
 
 def train():
-    all_epoch = 999
+    all_epoch = 99999
     seed_torch()
 
     model = ModelBuilder().train()  # .cuda().train()
@@ -26,6 +26,8 @@ def train():
     my_optim = OptimBuilder()
     optim, scheduler = my_optim.build_optim_and_scheduler(model)
     loss_obj = LossBuilder()
+    shotpath = "./ray_gen/snapshot/step1"
+
     for epoch in range(all_epoch):
         train_loss = []
         for i, sys_param in enumerate(tqdm(train_data_loader)):
@@ -43,8 +45,8 @@ def train():
             train_loss.append(loss.item())
 
         scheduler.step()
-        if epoch > 999:
-            shotpath = "./ray_gen/snapshot/step1"
+
+        if epoch % 10 == 0 and epoch != 0:
             os.makedirs(shotpath, exist_ok=True)
             torch.save(
                 {
@@ -54,9 +56,13 @@ def train():
                 },
                 shotpath + "/step_{}.pth".format(epoch),
             )
+            print(f"save epoch {epoch}")
 
         train_loss = np.mean(train_loss, 0)
         train_loss_info = "train mean loss = {} ".format(train_loss)
         print(train_loss_info)
-        print(lens_system[-1])
-        loss_obj.show()
+        os.makedirs(shotpath, exist_ok=True)
+        with open(f"{shotpath}/test.txt", "a") as file:
+            print(train_loss_info, file=file)
+
+        loss_obj.show(epoch, shotpath)
