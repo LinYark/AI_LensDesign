@@ -4,7 +4,7 @@ import torch
 
 class RangeData(Dataset):
     def __init__(self):
-        self.num = 200000
+        self.num = 160000
         # self.g_t_min = 5
         # self.g_t_max = 20
         # self.a_t_min = 10
@@ -13,7 +13,7 @@ class RangeData(Dataset):
         self.hfov = 1  # random
 
     def __getitem__(self, idx):
-        random_tensor = torch.rand([2])
+        random_tensor = torch.rand([3])  # 0-1
         return random_tensor
 
     def __len__(self):

@@ -11,8 +11,8 @@ from ray_gen.model.model_builder import ModelBuilder
 from ray_gen.data.data_loader import DataLoadBuilder
 from ray_gen.optimizer.optim_builder import OptimBuilder
 from ray_gen.loss.loss_builder import LossBuilder
-from ray_gen.utils.common import seed_torch
 from ray_gen.loss.loss_builder import LossBuilder
+from ray_gen.bin.sup import seed_torch, save_epoch, print_epoch
 
 
 def train():
@@ -36,33 +36,18 @@ def train():
 
             loss = loss_obj.get_loss(sys_param, lens_system)
             optim.zero_grad()
-            loss.backward()
+            loss["all_loss"].backward()
             torch.nn.utils.clip_grad_norm_(
                 parameters=model.parameters(), max_norm=10, norm_type=2
             )
             optim.step()
-
-            train_loss.append(loss.item())
+            with torch.no_grad():
+                loss_info = loss_obj.backup(loss)
+                train_loss.append(loss_info)
 
         scheduler.step()
+        loss_obj.show(epoch, shotpath)
+        print_epoch(train_loss, shotpath)
 
         if epoch % 10 == 0 and epoch != 0:
-            os.makedirs(shotpath, exist_ok=True)
-            torch.save(
-                {
-                    "state_dict": model.state_dict(),
-                    "next_epoch": epoch + 1,
-                    "next_lr": optim.param_groups[-1]["lr"],
-                },
-                shotpath + "/step_{}.pth".format(epoch),
-            )
-            print(f"save epoch {epoch}")
-
-        train_loss = np.mean(train_loss, 0)
-        train_loss_info = "train mean loss = {} ".format(train_loss)
-        print(train_loss_info)
-        os.makedirs(shotpath, exist_ok=True)
-        with open(f"{shotpath}/test.txt", "a") as file:
-            print(train_loss_info, file=file)
-
-        loss_obj.show(epoch, shotpath)
+            save_epoch(epoch, shotpath, model, optim)

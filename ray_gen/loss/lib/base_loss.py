@@ -23,10 +23,20 @@ class BaseLoss:
         RMS_loss = self.get_RMS_loss(rays_list, sins_list, surfaces_list)
         sins_loss = self.get_sin_loss(rays_list, sins_list, surfaces_list)
         thick_loss = self.get_thick_loss(lens_system)
-        all_loss = RMS_loss + sins_loss + thick_loss * 10
+        na_loss = self.get_na_loss(sys_param, rays_list, sins_list)
+        all_loss = RMS_loss + sins_loss + thick_loss + na_loss * 100
         if torch.isnan(all_loss):
             a = 1
-        return all_loss, rays_list, sins_list, surfaces_list
+        return {
+            "all_loss": all_loss,
+            "RMS_loss": RMS_loss,
+            "sins_loss": sins_loss,
+            "thick_loss": thick_loss,
+            "na_loss": na_loss,
+            "rays_list": rays_list,
+            "sins_list": sins_list,
+            "surfaces_list": surfaces_list,
+        }
 
     def get_RMS_loss(self, rays_list, sins_list, surfaces_list):
         bs = len(surfaces_list)
@@ -104,4 +114,24 @@ class BaseLoss:
         if len(thick_loss_list) > 0:
             thick_loss_list_torch = torch.mean(torch.stack(thick_loss_list))
             y_loss = thick_loss_list_torch
+        return y_loss
+
+    def get_na_loss(self, sys_param, rays_list, sins_list):
+        bs = len(sys_param)
+        na_loss_list = []
+        for i in range(bs):
+            rays = rays_list[i]
+            sins = sins_list[i]
+            if len(sins) > 0:
+                continue
+
+            final_lights = rays[-1][0][-2:]
+            for i in final_lights:
+                na_loss = (torch.abs(torch.sin(i.u)) - (sys_param[-1] * 0.6 + 0.1)) ** 2
+                na_loss_list.append(na_loss)
+
+        y_loss = torch.tensor(0.0)
+        if len(na_loss_list) > 0:
+            na_loss_list_torch = torch.mean(torch.stack(na_loss_list))
+            y_loss = na_loss_list_torch
         return y_loss

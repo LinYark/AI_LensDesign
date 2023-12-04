@@ -7,11 +7,11 @@ class TracingBuilder:
         pass
 
     def g_thick_map(self, input):
-        out = (input * 10) + 15  # 5-25
+        out = (input * 15) + 20  # 5-25
         return out
 
     def a_thick_map(self, input):
-        out = (input * 50) + 60  # 10-110
+        out = (input * 300) + 310  # 10-110
         return out
 
     def get_config_list(self, lens_system):
@@ -20,6 +20,8 @@ class TracingBuilder:
             config = [
                 (bs[0], self.g_thick_map(bs[1]), 1.5168, 60),
                 (bs[2], self.a_thick_map(bs[3]), 1, 60),
+                (bs[4], self.g_thick_map(bs[5]), 1.5168, 60),
+                (bs[6], self.a_thick_map(bs[7]), 1, 60),
                 (0, torch.inf, 1, 60),
             ]
             config_list.append(config)
@@ -29,7 +31,7 @@ class TracingBuilder:
         osm_list = []
         for i, batch in enumerate(config_list):
             osm = OpticalSystemModule()  # .cuda()
-            epd, field = sys_param[i][0].item() * 60, sys_param[i][1].item() * 30
+            epd, field = sys_param[i][0].item() * 40 + 10, sys_param[i][1].item() * 30
             osm.set_system_param(epd, field, stop_face=0)
             for surface in batch:
                 osm.add_surface(surface)
