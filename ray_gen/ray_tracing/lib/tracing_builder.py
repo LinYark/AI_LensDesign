@@ -31,7 +31,10 @@ class TracingBuilder:
         osm_list = []
         for i, batch in enumerate(config_list):
             osm = OpticalSystemModule()  # .cuda()
-            epd, field = sys_param[i][0].item() * 40 + 10, sys_param[i][1].item() * 30
+            epd, field = (
+                sys_param[i][0].item() * 20 + 30,
+                sys_param[i][1].item() * 15 + 15,
+            )
             osm.set_system_param(epd, field, stop_face=0)
             for surface in batch:
                 osm.add_surface(surface)

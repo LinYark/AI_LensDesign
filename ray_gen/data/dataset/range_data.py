@@ -13,7 +13,7 @@ class RangeData(Dataset):
         self.hfov = 1  # random
 
     def __getitem__(self, idx):
-        random_tensor = torch.rand([3])  # 0-1
+        random_tensor = torch.rand([3]) * 2 - 1  # -1-1
         return random_tensor
 
     def __len__(self):

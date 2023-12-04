@@ -12,27 +12,28 @@ from ray_gen.data.data_loader import DataLoadBuilder
 from ray_gen.optimizer.optim_builder import OptimBuilder
 from ray_gen.loss.loss_builder import LossBuilder
 from ray_gen.loss.loss_builder import LossBuilder
-from ray_gen.bin.sup import seed_torch, save_epoch, print_epoch
+from ray_gen.bin.sup import seed_torch, save_epoch, print_epoch, print_item
 
 
 def train():
     all_epoch = 99999
+    print_hz = 100
     seed_torch()
 
-    model = ModelBuilder().train()  # .cuda().train()
+    model = ModelBuilder().cuda().train()  # .cuda().train()
     train_data_loader = DataLoadBuilder().build_train_loader()
     val_data_loader = DataLoadBuilder().build_valid_loader()
     # a = next(iter(train_data_loader))
     my_optim = OptimBuilder()
     optim, scheduler = my_optim.build_optim_and_scheduler(model)
     loss_obj = LossBuilder()
-    shotpath = "./ray_gen/snapshot/step1"
+    shotpath = "./workspace/snapshot/step1"
 
     for epoch in range(all_epoch):
         train_loss = []
-        for i, sys_param in enumerate(tqdm(train_data_loader)):
-            # sys_param = sys_param.cuda()
-            lens_system = model(sys_param)
+        for i, sys_param in enumerate(train_data_loader):
+            sys_param = sys_param.cuda()
+            lens_system = model(sys_param).cpu()
 
             loss = loss_obj.get_loss(sys_param, lens_system)
             optim.zero_grad()
@@ -44,10 +45,11 @@ def train():
             with torch.no_grad():
                 loss_info = loss_obj.backup(loss)
                 train_loss.append(loss_info)
-
+                if i % print_hz == 0:
+                    print_item([loss_info], shotpath, epoch, i)
         scheduler.step()
         loss_obj.show(epoch, shotpath)
-        print_epoch(train_loss, shotpath)
+        print_epoch(train_loss, shotpath, epoch)
 
         if epoch % 10 == 0 and epoch != 0:
             save_epoch(epoch, shotpath, model, optim)

@@ -23,8 +23,8 @@ class BaseLoss:
         RMS_loss = self.get_RMS_loss(rays_list, sins_list, surfaces_list)
         sins_loss = self.get_sin_loss(rays_list, sins_list, surfaces_list)
         thick_loss = self.get_thick_loss(lens_system)
-        na_loss = self.get_na_loss(sys_param, rays_list, sins_list)
-        all_loss = RMS_loss + sins_loss + thick_loss + na_loss * 100
+        na_loss = self.get_na_loss(sys_param, rays_list, sins_list) * 100
+        all_loss = RMS_loss + sins_loss + thick_loss + na_loss
         if torch.isnan(all_loss):
             a = 1
         return {
@@ -127,7 +127,7 @@ class BaseLoss:
 
             final_lights = rays[-1][0][-2:]
             for i in final_lights:
-                na_loss = (torch.abs(torch.sin(i.u)) - (sys_param[-1] * 0.6 + 0.1)) ** 2
+                na_loss = (torch.abs(torch.sin(i.u)) - (sys_param[-1] * 0.2 + 0.3)) ** 2
                 na_loss_list.append(na_loss)
 
         y_loss = torch.tensor(0.0)
