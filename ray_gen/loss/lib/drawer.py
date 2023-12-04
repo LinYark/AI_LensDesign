@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch
 import os
@@ -46,7 +49,7 @@ class OpticalSystemDrawer:
         bs = np.clip(bs, 0, 6)
 
         plt.cla()
-        plt.figure(figsize=(24, 16), dpi=80)
+        plt.figure(figsize=(36, 20), dpi=80)
         for idx in range(bs):
             # i, j = idx / 2, idx % j
             plt.subplot(3, 2, idx + 1)
@@ -65,7 +68,7 @@ class OpticalSystemDrawer:
         target_dir = f"{shotpath}/img"
         os.makedirs(target_dir, exist_ok=True)
         target_path = f"{target_dir}/{current_time}.png"
-        plt.savefig(target_path)
+        plt.savefig(target_path, bbox_inches="tight")
 
         # plt.show(block=False)
         # plt.pause(5)
