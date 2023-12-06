@@ -44,11 +44,14 @@ class TracingBuilder:
     def get_rays_and_surfaces(self, sys_param, lens_system):
         config_list = self.get_config_list(lens_system)
         osm_list = self.get_model_list(sys_param, config_list)
-        rays_list, sins_list, surfaces_list = [], [], []
+        rays_list, sins_list, surfaces_list, intersections_list = [], [], [], []
         for osm in osm_list:
-            rays, sins = osm()
+            rays, sins, intersections = osm()
             surfaces = osm.get_surface()
             rays_list.append(rays)
             sins_list.append(sins)
             surfaces_list.append(surfaces)
-        return rays_list, sins_list, surfaces_list
+            intersections_list.append(intersections)
+
+        intersections_tensor = torch.stack(intersections_list)
+        return rays_list, sins_list, surfaces_list, intersections_tensor

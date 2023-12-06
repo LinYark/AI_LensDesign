@@ -85,18 +85,23 @@ class OpticalSystemModule(nn.Module):
         all_lights = []
         all_lights.append(forward_light)
         all_sinI = []
+        all_intersection = []
         for i, surface in enumerate(self.surfaces):
             c, t_1, n_1, z = surface.c, 1 / surface.t, surface.n, surface.z
+
             if c == 0:
                 c = c + EPSILON
             if i > 0:
                 n, t = self.surfaces[i - 1].n, 1 / self.surfaces[i - 1].t
             else:
                 n, t = 1, 0
+
             if c != 0:
-                out_lights = []
+                surface_lights = []
+                surface_intersection = []
                 for single_angle_lights in all_lights[i]:
                     angle_lights = []
+                    angle_intersection = []
                     for light in single_angle_lights:
                         u, color = light.u, light.c
                         q = light.q + torch.sin(u) * t
@@ -104,6 +109,7 @@ class OpticalSystemModule(nn.Module):
                         sinI_1 = n * sinI / n_1
                         u_1 = u - torch.asin(sinI) + torch.asin(sinI_1)
                         q_1 = (sinI_1 - torch.sin(u_1)) / c
+
                         angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
 
                         if torch.isnan(q_1) or torch.isnan(u_1) or torch.isnan(z):
@@ -112,27 +118,41 @@ class OpticalSystemModule(nn.Module):
                             all_sinI.append(sinI)
                         if torch.abs(sinI_1) > 1:
                             all_sinI.append(sinI_1)
-                    out_lights.append(angle_lights)
-            else:
-                out_lights = []
-                for single_angle_lights in all_lights[i]:
-                    angle_lights = []
-                    for light in single_angle_lights:
-                        u, color = light.u, light.c
-                        q = light.q + torch.sin(u) * t
-                        sinI = torch.sin(u)
-                        I_1 = torch.asin(n * sinI / n_1)
-                        u_1 = I_1
-                        if u == 0:
-                            q_1 = 0
+
+                        if abs(u * u_1) > EPSILON and abs(u - u_1) > EPSILON:
+                            delta = u - u_1
+                            intersection_z = (
+                                torch.tan(u) * (z - q / torch.sin(u))
+                                - torch.tan(u_1) * (z - q_1 / torch.sin(u_1))
+                            ) / (torch.tan(u) - torch.tan(u_1))
+                            intersection_y = torch.tan(u_1) * (
+                                intersection_z - z + q_1 / torch.sin(u_1)
+                            )
+                        elif abs(u) < EPSILON and abs(u_1) > EPSILON:
+                            intersection_z = (
+                                q / torch.tan(u_1) + z - q_1 / torch.sin(u_1)
+                            )
+                            intersection_y = q
+                        elif abs(u) > EPSILON and abs(u_1) < EPSILON:
+                            intersection_z = q_1 / torch.tan(u) + z - q / torch.sin(u)
+                            intersection_y = q_1
+                        elif abs(u) < EPSILON and abs(u_1) < EPSILON:
+                            intersection_z = z
+                            intersection_y = q_1
                         else:
-                            q_1 = torch.cos(u_1) * q / torch.cos(u)
-                        if torch.isnan(u_1):
-                            a = 1
-                        angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
-                    out_lights.append(angle_lights)
-            all_lights.append(out_lights)
-        return all_lights, all_sinI
+                            intersection_z = z
+                            intersection_y = torch.tan(u_1) * (
+                                intersection_z - z + q_1 / torch.sin(u_1)
+                            )
+                        angle_intersection.append(intersection_z)
+
+                    surface_lights.append(angle_lights)
+                    surface_intersection.append(torch.stack(angle_intersection))
+
+            all_lights.append(surface_lights)
+            all_intersection.append(torch.stack(surface_intersection))
+        all_intersection_tensor = torch.stack(all_intersection)
+        return all_lights, all_sinI, all_intersection_tensor
 
     def reverse_track(self, reverse_lights, cur_stop_position):
         front_material = 1

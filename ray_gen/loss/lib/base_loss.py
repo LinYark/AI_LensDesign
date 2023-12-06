@@ -11,20 +11,22 @@ class BaseLoss:
 
     def get_source_data(self, sys_param, lens_system):
         rtb = RayTracingBuilder()
-        rays_list, sins_list, surfaces_list = rtb.get_rays_and_surfaces(
-            sys_param, lens_system
-        )
-        return rays_list, sins_list, surfaces_list
+        info = rtb.get_rays_and_surfaces(sys_param, lens_system)
+        return info
 
     def get_loss(self, sys_param, lens_system):
-        rays_list, sins_list, surfaces_list = self.get_source_data(
-            sys_param, lens_system
-        )
-        RMS_loss = self.get_RMS_loss(rays_list, sins_list, surfaces_list)
+        (
+            rays_list,
+            sins_list,
+            surfaces_list,
+            intersections_tensor,
+        ) = self.get_source_data(sys_param, lens_system)
+        RMS_loss = self.get_RMS_loss(rays_list, sins_list, surfaces_list) * 10
         sins_loss = self.get_sin_loss(rays_list, sins_list, surfaces_list)
         thick_loss = self.get_thick_loss(lens_system)
-        na_loss = self.get_na_loss(sys_param, rays_list, sins_list) * 100
-        all_loss = RMS_loss + sins_loss + thick_loss + na_loss
+        na_loss = self.get_na_loss(sys_param, rays_list, sins_list) * 10
+        refraction_loss = self.get_reverse_refraction_loss(intersections_tensor)
+        all_loss = RMS_loss + sins_loss + thick_loss + na_loss + refraction_loss
         if torch.isnan(all_loss):
             a = 1
         return {
@@ -33,6 +35,7 @@ class BaseLoss:
             "sins_loss": sins_loss,
             "thick_loss": thick_loss,
             "na_loss": na_loss,
+            "refraction_loss": refraction_loss,
             "rays_list": rays_list,
             "sins_list": sins_list,
             "surfaces_list": surfaces_list,
@@ -70,8 +73,7 @@ class BaseLoss:
                 y.append(angle_y_tensors)
 
             y_tensor = torch.stack(y)
-            y_var = torch.std(y_tensor, 1)
-            RMS_loss = y_var.dot(y_var)
+            RMS_loss = torch.std(y_tensor, 1)
             RMS_loss_list.append(RMS_loss)
 
         y_loss = torch.tensor(0.0)
@@ -92,7 +94,7 @@ class BaseLoss:
             if len(sins) == 0:
                 continue
             first_breaker = sins[0]
-            sins_loss = torch.pow(first_breaker, 2)
+            sins_loss = first_breaker**2
             sins_loss_list.append(sins_loss)
         y_loss = torch.tensor(0.0)
         if len(sins_loss_list) > 0:
@@ -108,7 +110,9 @@ class BaseLoss:
             thicks_fail = thicks[torch.where((thicks < -1) + (thicks > 1))]
             if len(thicks_fail) == 0:
                 continue
-            thick_loss = thicks_fail.dot(thicks_fail - 0.5)
+            n = len(thicks_fail)
+            thicks_fail = torch.abs(thicks_fail) - 1
+            thick_loss = thicks_fail.dot(thicks_fail) / n
             thick_loss_list.append(thick_loss)
         y_loss = torch.tensor(0.0)
         if len(thick_loss_list) > 0:
@@ -127,11 +131,27 @@ class BaseLoss:
 
             final_lights = rays[-1][0][-2:]
             for i in final_lights:
-                na_loss = (torch.abs(torch.sin(i.u)) - (sys_param[-1] * 0.2 + 0.3)) ** 2
+                na_loss = (
+                    (torch.abs(torch.sin(i.u)) - (sys_param[-1] * 0.2 + 0.25))
+                    / (torch.abs(torch.sin(i.u)) + EPSILON)
+                ) ** 2
                 na_loss_list.append(na_loss)
 
         y_loss = torch.tensor(0.0)
         if len(na_loss_list) > 0:
             na_loss_list_torch = torch.mean(torch.stack(na_loss_list))
             y_loss = na_loss_list_torch
+        return y_loss
+
+    def get_reverse_refraction_loss(self, intersections_tensor):
+        intersections = intersections_tensor
+        cur_intersections = intersections[:, :-1, ...]
+        next_intersections = intersections[:, 1:, ...]
+        delta = next_intersections - cur_intersections
+        picks = delta[torch.where(delta < 0)] - 1
+
+        y_loss = torch.tensor(0.0)
+        if picks.numel() > 0:
+            y_loss = picks.dot(picks) / len(picks)
+
         return y_loss

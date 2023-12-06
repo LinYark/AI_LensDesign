@@ -12,7 +12,13 @@ from ray_gen.data.data_loader import DataLoadBuilder
 from ray_gen.optimizer.optim_builder import OptimBuilder
 from ray_gen.loss.loss_builder import LossBuilder
 from ray_gen.loss.loss_builder import LossBuilder
-from ray_gen.bin.sup import seed_torch, save_epoch, print_epoch, print_item
+from ray_gen.bin.sup import (
+    seed_torch,
+    save_epoch,
+    print_epoch,
+    print_item,
+    resume_training,
+)
 
 
 def train():
@@ -21,6 +27,8 @@ def train():
     seed_torch()
 
     model = ModelBuilder().cuda().train()  # .cuda().train()
+    resume_training(model, "./workspace/snapshot/step_pre/step_80.pth")
+
     train_data_loader = DataLoadBuilder().build_train_loader()
     val_data_loader = DataLoadBuilder().build_valid_loader()
     # a = next(iter(train_data_loader))
@@ -48,7 +56,7 @@ def train():
                 if i % print_hz == 0:
                     print_item([loss_info], shotpath, epoch, i)
         scheduler.step()
-        loss_obj.show(epoch, shotpath)
+        loss_obj.show(epoch, shotpath, loss)
         print_epoch(train_loss, shotpath, epoch)
 
         if epoch % 10 == 0 and epoch != 0:

@@ -15,7 +15,7 @@ def seed_torch(seed=0):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False
 
 
 def save_epoch(epoch, shotpath, model, optim):
@@ -51,9 +51,18 @@ def print_item(train_loss, shotpath, epoch, idx):
     end_time_item = time.time()
     delta_time = end_time_item - start_time_item
     start_time_item = end_time_item
-    np.set_printoptions(6)
+    np.set_printoptions(5)
     train_loss_info = f"{delta_time:3.1f}s, {epoch}, {idx}, train_loss = {train_loss} "
     print(train_loss_info)
     os.makedirs(shotpath, exist_ok=True)
     with open(f"{shotpath}/test.txt", "a") as file:
         print(train_loss_info, file=file)
+
+
+def resume_training(model, path):
+    load_data = torch.load(path)
+
+    model_dict = model.state_dict()
+    state_dict = load_data["state_dict"]
+    model_dict.update(state_dict)
+    model.load_state_dict(model_dict)
