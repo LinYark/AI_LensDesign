@@ -27,11 +27,11 @@ def train():
     seed_torch()
 
     model = ModelBuilder().cuda().train()  # .cuda().train()
-    resume_training(model, "./workspace/snapshot/step_pre/step_80.pth")
+    resume_training(model, "./workspace/snapshot/step1/step_60.pth")
 
     train_data_loader = DataLoadBuilder().build_train_loader()
     val_data_loader = DataLoadBuilder().build_valid_loader()
-    # a = next(iter(train_data_loader))
+
     my_optim = OptimBuilder()
     optim, scheduler = my_optim.build_optim_and_scheduler(model)
     loss_obj = LossBuilder()

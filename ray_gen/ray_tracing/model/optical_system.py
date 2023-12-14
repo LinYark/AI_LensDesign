@@ -154,6 +154,39 @@ class OpticalSystemModule(nn.Module):
         all_intersection_tensor = torch.stack(all_intersection)
         return all_lights, all_sinI, all_intersection_tensor
 
+    def forward_bone(self, forward_light):
+        all_lights = []
+        all_lights.append(forward_light)
+
+        for i, surface in enumerate(self.surfaces):
+            c, t_1, n_1, z = surface.c, 1 / surface.t, surface.n, surface.z
+
+            if c == 0:
+                c = c + EPSILON
+            if i > 0:
+                n, t = self.surfaces[i - 1].n, 1 / self.surfaces[i - 1].t
+            else:
+                n, t = 1, 0
+
+            if c != 0:
+                surface_lights = []
+                surface_intersection = []
+                for single_angle_lights in all_lights[i]:
+                    angle_lights = []
+                    for light in single_angle_lights:
+                        u, color = light.u, light.c
+                        q = light.q + torch.sin(u) * t
+                        sinI = q * c + torch.sin(u)
+                        sinI_1 = n * sinI / n_1
+                        u_1 = u - torch.asin(sinI) + torch.asin(sinI_1)
+                        q_1 = (sinI_1 - torch.sin(u_1)) / c
+
+                        angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
+                    surface_lights.append(angle_lights)
+
+            all_lights.append(surface_lights)
+        return all_lights
+
     def reverse_track(self, reverse_lights, cur_stop_position):
         front_material = 1
         for i, surface in enumerate(self.surfaces):
@@ -212,6 +245,37 @@ class OpticalSystemModule(nn.Module):
         cur_EPD_postion = torch.mean(z_c)
         return cur_EPD_postion
 
+    def get_f(self):
+        field_center_light = []
+        u = 0 / 180 * torch.pi
+        p = 0
+        c = "b"
+
+        field_center_light.append(LightModule(q=1e-3, u=u, p=p, c=c))
+        field_center_light.append(LightModule(q=-1e-3, u=u, p=p, c=c))
+
+        all_lights = self.forward_bone([field_center_light])
+        final_lights = all_lights[-1]
+
+        l1 = final_lights[0][0]
+        l2 = final_lights[0][1]
+        z = (
+            torch.tan(l1.u) * (l1.p - l1.q / torch.sin(l1.u))
+            - torch.tan(l2.u) * (l2.p - l2.q / torch.sin(l2.u))
+        ) / (torch.tan(l1.u) - torch.tan(l2.u))
+        y = torch.tan(l2.u) * (z - l2.p + l2.q / torch.sin(l2.u))
+        f_pre = z
+
+        first_lights = all_lights[0]
+        l1 = final_lights[0][0]
+        l2 = first_lights[0][0]
+        z = l2.q / torch.tan(l1.u) + l1.p - l1.q / torch.sin(l1.u)
+        y = torch.tan(l1.u) * (z - l1.p + l1.q / torch.sin(l1.u))
+        img_main_point = z
+        effect_f = f_pre - img_main_point
+
+        return effect_f
+
     def forward(self):
         self.flash_surface_z_potion()
         cur_stop_position = self.get_cur_entrance_puplil_position()
@@ -219,6 +283,6 @@ class OpticalSystemModule(nn.Module):
         cur_EPD_position = self.reverse_track(reverser_lights, cur_stop_position)
         forward_light = self.build_forward_light(cur_EPD_position)
         light_trace = self.forward_track(forward_light)
-
+        f = self.get_f()
         self.light_trace = light_trace
         return light_trace

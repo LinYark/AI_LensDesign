@@ -111,7 +111,7 @@ class BaseLoss:
             if len(thicks_fail) == 0:
                 continue
             n = len(thicks_fail)
-            thicks_fail = torch.abs(thicks_fail) - 1
+            thicks_fail = torch.abs(thicks_fail) - 0
             thick_loss = thicks_fail.dot(thicks_fail) / n
             thick_loss_list.append(thick_loss)
         y_loss = torch.tensor(0.0)
