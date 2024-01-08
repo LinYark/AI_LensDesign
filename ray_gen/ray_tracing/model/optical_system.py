@@ -283,6 +283,5 @@ class OpticalSystemModule(nn.Module):
         cur_EPD_position = self.reverse_track(reverser_lights, cur_stop_position)
         forward_light = self.build_forward_light(cur_EPD_position)
         light_trace = self.forward_track(forward_light)
-        f = self.get_f()
         self.light_trace = light_trace
         return light_trace

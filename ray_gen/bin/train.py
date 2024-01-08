@@ -27,7 +27,7 @@ def train():
     seed_torch()
 
     model = ModelBuilder().cuda().train()  # .cuda().train()
-    resume_training(model, "./workspace/snapshot/step1/step_60.pth")
+    # resume_training(model, "./workspace/snapshot/step1/step_100.pth")
 
     train_data_loader = DataLoadBuilder().build_train_loader()
     val_data_loader = DataLoadBuilder().build_valid_loader()
@@ -35,7 +35,7 @@ def train():
     my_optim = OptimBuilder()
     optim, scheduler = my_optim.build_optim_and_scheduler(model)
     loss_obj = LossBuilder()
-    shotpath = "./workspace/snapshot/step1"
+    shotpath = "./workspace/snapshot/step0108"
 
     for epoch in range(all_epoch):
         train_loss = []
@@ -55,9 +55,10 @@ def train():
                 train_loss.append(loss_info)
                 if i % print_hz == 0:
                     print_item([loss_info], shotpath, epoch, i)
+                    # loss_obj.show(epoch, shotpath, loss)
         scheduler.step()
         loss_obj.show(epoch, shotpath, loss)
         print_epoch(train_loss, shotpath, epoch)
 
-        if epoch % 10 == 0 and epoch != 0:
+        if epoch % 20 == 0 and epoch != 0:
             save_epoch(epoch, shotpath, model, optim)

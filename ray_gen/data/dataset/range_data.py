@@ -1,5 +1,6 @@
 from torch.utils.data.dataset import Dataset
 import torch
+from ...config.config import TrainCfg
 
 
 class RangeData(Dataset):
@@ -13,7 +14,24 @@ class RangeData(Dataset):
         self.hfov = 1  # random
 
     def __getitem__(self, idx):
-        random_tensor = torch.rand([3]) * 2 - 1  # -1-1
+        random_tensor = torch.rand([TrainCfg().sys_num]) * 2 - 1  # -1-1
+        return random_tensor
+
+    def __len__(self):
+        return self.num
+
+
+class ValidRangeData(Dataset):
+    def __init__(self):
+        self.num = 160000
+        self.epd = 1
+        self.hfov = 1
+
+    def __getitem__(self, idx):
+        random_tensor = torch.rand([3])
+        random_tensor[0] = random_tensor[0] * 2 - 1
+        random_tensor[1] = random_tensor[1] * 1 / 15 * 2 - 1
+        random_tensor[2] = random_tensor[2] * 2 - 1
         return random_tensor
 
     def __len__(self):

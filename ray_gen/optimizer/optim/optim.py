@@ -20,7 +20,7 @@ class Optim:
         return optim
 
     def build_scheduler(self, optim):
-        one_turn = 30
+        one_turn = 100
         scheduler1 = lr_scheduler.LinearLR(
             optim, start_factor=1e-3, end_factor=1e-5, total_iters=one_turn
         )
