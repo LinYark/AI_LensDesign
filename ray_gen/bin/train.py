@@ -11,7 +11,7 @@ from ray_gen.model.model_builder import ModelBuilder
 from ray_gen.data.data_loader import DataLoadBuilder
 from ray_gen.optimizer.optim_builder import OptimBuilder
 from ray_gen.loss.loss_builder import LossBuilder
-from ray_gen.loss.loss_builder import LossBuilder
+
 from ray_gen.bin.sup import (
     seed_torch,
     save_epoch,
@@ -23,42 +23,45 @@ from ray_gen.bin.sup import (
 
 def train():
     all_epoch = 99999
-    print_hz = 100
+    print_hz = 50
+    resume_flg = False
     seed_torch()
 
     model = ModelBuilder().cuda().train()  # .cuda().train()
-    # resume_training(model, "./workspace/snapshot/step1/step_100.pth")
+    if resume_flg:
+        resume_training(model, "./workspace/snapshot/step01102100/step_30.pth")
 
     train_data_loader = DataLoadBuilder().build_train_loader()
     val_data_loader = DataLoadBuilder().build_valid_loader()
 
     my_optim = OptimBuilder()
-    optim, scheduler = my_optim.build_optim_and_scheduler(model)
+    optim, scheduler = my_optim.build_optim_and_scheduler(model, resume_flg)
     loss_obj = LossBuilder()
-    shotpath = "./workspace/snapshot/step0108"
+    shotpath = "./workspace/snapshot/step01102100_1"
 
     for epoch in range(all_epoch):
-        train_loss = []
+        # train_loss = []
         for i, sys_param in enumerate(train_data_loader):
             sys_param = sys_param.cuda()
+
             lens_system = model(sys_param).cpu()
 
             loss = loss_obj.get_loss(sys_param, lens_system)
             optim.zero_grad()
             loss["all_loss"].backward()
             torch.nn.utils.clip_grad_norm_(
-                parameters=model.parameters(), max_norm=10, norm_type=2
+                parameters=model.parameters(), max_norm=5.0, norm_type=2
             )
             optim.step()
             with torch.no_grad():
-                loss_info = loss_obj.backup(loss)
-                train_loss.append(loss_info)
                 if i % print_hz == 0:
+                    loss_info = loss_obj.backup(loss)
+                    # train_loss.append(loss_info)
                     print_item([loss_info], shotpath, epoch, i)
                     # loss_obj.show(epoch, shotpath, loss)
         scheduler.step()
         loss_obj.show(epoch, shotpath, loss)
-        print_epoch(train_loss, shotpath, epoch)
+        # print_epoch(train_loss, shotpath, epoch)
 
-        if epoch % 20 == 0 and epoch != 0:
+        if epoch % 10 == 0 and epoch != 0:
             save_epoch(epoch, shotpath, model, optim)

@@ -12,7 +12,7 @@ class SurfaceModule(nn.Module):
             self.t = torch.tensor(1.0 / t)
         self.n = torch.tensor(n, dtype=float)
         self.h = torch.tensor(h, dtype=float)
-        self.z = torch.tensor(0, dtype=float)
+        self.z = torch.tensor(0, dtype=float)  # .cuda()
 
     def forward_track(self):
         pass

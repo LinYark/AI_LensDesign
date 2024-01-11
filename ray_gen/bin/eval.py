@@ -11,7 +11,6 @@ from ray_gen.model.model_builder import ModelBuilder
 from ray_gen.data.data_loader import DataLoadBuilder
 from ray_gen.optimizer.optim_builder import OptimBuilder
 from ray_gen.loss.loss_builder import LossBuilder
-from ray_gen.loss.loss_builder import LossBuilder
 from ray_gen.bin.sup import (
     seed_torch,
     save_epoch,

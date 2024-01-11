@@ -30,17 +30,21 @@ class LossBuilder:
     def backup(self, loss):
         all_loss = loss["all_loss"].cpu().item()
         RMS_loss = loss["RMS_loss"].cpu().item()
+        RMS = loss["RMS"].cpu().item()
         sins_loss = loss["sins_loss"].cpu().item()
         thick_loss = loss["thick_loss"].cpu().item()
-        f_num_loss = loss["f_num_loss"].cpu().item()
+        na_loss = loss["na_loss"].cpu().item()
         refraction_loss = loss["refraction_loss"].cpu().item()
+        f_num_loss = loss["f_num_loss"].cpu().item()
         loss_info = [
             all_loss,
             RMS_loss,
             sins_loss,
             thick_loss,
-            f_num_loss,
+            na_loss,
             refraction_loss,
+            f_num_loss,
+            RMS,
         ]
         return loss_info
 

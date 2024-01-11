@@ -72,7 +72,7 @@ class OpticalSystemDrawer:
 
         # plt.show(block=False)
         # plt.pause(5)
-        # plt.close("all")
+        plt.close("all")
 
     def draw(self):
         all_surface_points, all_edge_points = self.draw_surfaces()

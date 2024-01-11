@@ -5,7 +5,7 @@ from ...config.config import TrainCfg
 
 class RangeData(Dataset):
     def __init__(self):
-        self.num = 160000
+        self.num = 20000
         # self.g_t_min = 5
         # self.g_t_max = 20
         # self.a_t_min = 10
@@ -23,7 +23,7 @@ class RangeData(Dataset):
 
 class ValidRangeData(Dataset):
     def __init__(self):
-        self.num = 160000
+        self.num = 80000
         self.epd = 1
         self.hfov = 1
 

@@ -24,26 +24,28 @@ class BaseLoss:
             f,
             sys_param_transed_list,
         ) = self.get_source_data(sys_param, lens_system)
-        RMS_loss = self.get_RMS_loss(rays_list, sins_list, surfaces_list)
+        RMS_loss, RMS = self.get_RMS_loss(rays_list, sins_list, surfaces_list)
         sins_loss = self.get_sin_loss(rays_list, sins_list, surfaces_list)
         thick_loss = self.get_thick_loss(lens_system)
-        # na_loss = torch.tensor(0.0)
-        refraction_loss = torch.tensor(0.0)
-        f_num_loss, f_num_pre_list = torch.tensor(0.0), torch.tensor(0.0)
 
+        # na_loss = torch.tensor(0.0)
         na_loss = self.get_na_loss(sys_param, rays_list, sins_list)
+        # refraction_loss = torch.tensor(0.0)
         refraction_loss = self.get_reverse_refraction_loss(intersections_tensor)
+        f_num_loss, f_num_pre_list = torch.tensor(0.0), torch.tensor(0.0)
         # f_num_loss, f_num_pre_list = self.get_f_num_loss(sys_param, f)
-        all_loss = (
-            RMS_loss * 15
-            + sins_loss
-            + thick_loss
-            + na_loss * 10
-            + refraction_loss
-            # + f_num_loss
-        )
+
+        # all_loss = (
+        #     RMS_loss * 10
+        #     + (sins_loss + thick_loss + refraction_loss)
+        #     # + f_num_loss
+        #     # + na_loss * 10
+        # )
+
+        all_loss = RMS_loss * 1 + sins_loss + thick_loss + na_loss * 100
         if torch.isnan(all_loss):
-            a = 1
+            all_loss = torch.tensor(0.0, requires_grad=True)
+            print("Nan happened")
         return {
             "all_loss": all_loss,
             "RMS_loss": RMS_loss,
@@ -56,6 +58,7 @@ class BaseLoss:
             "sins_list": sins_list,
             "surfaces_list": surfaces_list,
             #
+            "RMS": RMS,
             "f_num_pre": f_num_pre_list,
             "sys_param_transed": sys_param_transed_list,
         }
@@ -96,12 +99,15 @@ class BaseLoss:
             RMS_loss_list.append(RMS_loss)
 
         y_loss = torch.tensor(0.0)
+        RMS_mean = torch.tensor(0.0)
         if len(RMS_loss_list) > 0:
-            RMS_loss_list_torch = torch.mean(torch.stack(RMS_loss_list))
-            y_loss = RMS_loss_list_torch
-        if torch.isnan(y_loss):
-            a = 1
-        return y_loss
+            loss = torch.stack(RMS_loss_list)
+            # v_m = torch.max(torch.abs(loss))
+            # loss_norm = loss / v_m
+            loss_mean = torch.mean(loss**2)
+            y_loss = loss_mean
+            RMS_mean = torch.mean(loss)
+        return y_loss, RMS_mean
 
     def get_sin_loss(self, rays_list, sins_list, surfaces_list):
         bs = len(surfaces_list)
@@ -113,12 +119,17 @@ class BaseLoss:
             if len(sins) == 0:
                 continue
             first_breaker = sins[0]
-            sins_loss = first_breaker**2
-            sins_loss_list.append(sins_loss)
+            sins_delta = torch.abs(first_breaker) - 0
+            sins_loss_list.append(sins_delta)
         y_loss = torch.tensor(0.0)
         if len(sins_loss_list) > 0:
-            sins_loss_list_torch = torch.mean(torch.stack(sins_loss_list))
+            sins_loss = torch.stack(sins_loss_list)
+            # v_m = torch.max(torch.abs(sins_loss))
+            # sins_loss_norm = torch.div(sins_loss, v_m)
+            sins_loss_list_torch = torch.mean(sins_loss**2)
             y_loss = sins_loss_list_torch
+        if torch.isnan(y_loss):
+            a = 1
         return y_loss
 
     def get_thick_loss(self, lens_system):
@@ -131,12 +142,18 @@ class BaseLoss:
                 continue
             n = len(thicks_fail)
             thicks_fail = torch.abs(thicks_fail) - 0
-            thick_loss = thicks_fail.dot(thicks_fail) / n
-            thick_loss_list.append(thick_loss)
+            thicks_fail_mean = torch.mean(thicks_fail)
+            thick_loss_list.append(thicks_fail_mean)
+
         y_loss = torch.tensor(0.0)
         if len(thick_loss_list) > 0:
-            thick_loss_list_torch = torch.mean(torch.stack(thick_loss_list))
+            thick_loss = torch.stack(thick_loss_list)
+            # v_m = torch.max(torch.abs(thick_loss))
+            # sins_loss_norm = torch.div(thick_loss, v_m)
+            thick_loss_list_torch = torch.mean(thick_loss**2)
             y_loss = thick_loss_list_torch
+        if torch.isnan(y_loss):
+            a = 1
         return y_loss
 
     def get_na_loss(self, sys_param, rays_list, sins_list):
@@ -151,22 +168,20 @@ class BaseLoss:
 
             final_lights = rays[-1][0][-2:]
             for j in final_lights:
-                na_loss = (
-                    (
-                        torch.abs(torch.sin(j.u))
-                        - (
-                            sys[2] * TrainCfg().input_scale[2][0]
-                            + TrainCfg().input_scale[0][1]
-                        )
-                    )
-                    / (torch.abs(torch.sin(j.u)) + EPSILON)
-                ) ** 2
+                v_u = torch.abs(torch.sin(j.u))
+                v_t = (
+                    sys[2] * TrainCfg().input_scale[2][0] + TrainCfg().input_scale[2][1]
+                )
+                na_loss = (v_u - v_t) / (torch.min(v_u, v_t) + 1e-3)
                 na_loss_list.append(na_loss)
 
         y_loss = torch.tensor(0.0)
         if len(na_loss_list) > 0:
-            na_loss_list_torch = torch.mean(torch.stack(na_loss_list))
-            y_loss = na_loss_list_torch
+            loss = torch.stack(na_loss_list)
+            # v_m = torch.max(torch.abs(loss))
+            # loss_norm = torch.div(loss, v_m)
+            loss_mean = torch.mean(loss**2)
+            y_loss = loss_mean
         return y_loss
 
     def get_reverse_refraction_loss(self, intersections_tensor):
@@ -174,11 +189,14 @@ class BaseLoss:
         cur_intersections = intersections[:, :-1, ...]
         next_intersections = intersections[:, 1:, ...]
         delta = next_intersections - cur_intersections
-        picks = delta[torch.where(delta < 0)] - 1
+        picks = delta[torch.where(delta < 0)] - 0.5
 
         y_loss = torch.tensor(0.0)
         if picks.numel() > 0:
-            y_loss = picks.dot(picks) / len(picks)
+            # v_m = torch.max(torch.abs(picks))
+            # picks_norm = torch.div(picks, v_m)
+            loss_mean = torch.mean(picks**2)
+            y_loss = loss_mean
 
         return y_loss
 
@@ -198,10 +216,14 @@ class BaseLoss:
             f_num_pre = epd / f[i]
             f_num_pre_list.append(f_num_pre)
             if torch.isnan(f_num_pre) == False:
-                delta = torch.abs(f_num_tar - f_num_pre)
+                delta = f_num_tar - f_num_pre
                 f_num_list.append(delta)
+
         y_loss = torch.tensor(0.0)
         if len(f_num_list) > 0:
-            thick_loss_list_torch = torch.mean(torch.stack(f_num_list))
-            y_loss = thick_loss_list_torch
+            loss = torch.stack(f_num_list)
+            # v_m = torch.max(torch.abs(loss))
+            # loss_norm = torch.div(loss, v_m)
+            loss_mean = torch.mean(loss**2)
+            y_loss = loss_mean
         return y_loss, f_num_pre_list

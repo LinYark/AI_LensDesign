@@ -22,6 +22,9 @@ class OpticalSystemModule(nn.Module):
             self.stop_position = 0
         self.f = f
 
+    def to_cuda(self):
+        self.cuda()
+
     def add_surface(self, surface):
         c, t, n, h = surface
         self.surfaces.append(SurfaceModule(c, t, n, h))
@@ -70,6 +73,9 @@ class OpticalSystemModule(nn.Module):
         c = "g"
         q_0 = -cur_EPD_postion * torch.sin(u)
         q_step = step * torch.cos(u)
+
+        if torch.isnan(q_step) or torch.isnan(u):
+            a = 1
         for i in range(4):
             if i == 0:
                 field_edge_light.append(LightModule(q=q_0, u=u, p=p, c=c))
@@ -99,10 +105,10 @@ class OpticalSystemModule(nn.Module):
             if c != 0:
                 surface_lights = []
                 surface_intersection = []
-                for single_angle_lights in all_lights[i]:
+                for j, single_angle_lights in enumerate(all_lights[i]):
                     angle_lights = []
                     angle_intersection = []
-                    for light in single_angle_lights:
+                    for k, light in enumerate(single_angle_lights):
                         u, color = light.u, light.c
                         q = light.q + torch.sin(u) * t
                         sinI = q * c + torch.sin(u)
@@ -112,12 +118,16 @@ class OpticalSystemModule(nn.Module):
 
                         angle_lights.append(LightModule(q=q_1, u=u_1, p=z, c=color))
 
-                        if torch.isnan(q_1) or torch.isnan(u_1) or torch.isnan(z):
-                            a = 1
+                        checked = 0
                         if torch.abs(sinI) > 1:
                             all_sinI.append(sinI)
+                            checked = 1
                         if torch.abs(sinI_1) > 1:
                             all_sinI.append(sinI_1)
+                            checked = 1
+                        if checked == 0:
+                            if torch.isnan(q_1) or torch.isnan(u_1):
+                                a = 1
 
                         if abs(u * u_1) > EPSILON and abs(u - u_1) > EPSILON:
                             delta = u - u_1
